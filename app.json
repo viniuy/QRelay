@@ -1,42 +1,60 @@
 {
   "expo": {
-    "name": "qrelay-tmp",
-    "slug": "qrelay-tmp",
-    "version": "1.0.0",
+    "name": "QRelay",
+    "slug": "qrelay",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "qrelaytmp",
+    "scheme": "qrelay",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.qrelay.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "QRelay reads the sender's screen through the camera. Frames are decoded on this phone and never stored or uploaded.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#131614",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
-    },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "predictiveBackGestureEnabled": false,
+      "package": "com.qrelay.app"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#F3F4F0",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 76,
+          "dark": {
+            "backgroundColor": "#0F1210"
+          }
         }
-      ]
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "QRelay reads the sender's screen through the camera. Frames are decoded on this phone and never stored or uploaded.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
