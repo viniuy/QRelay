@@ -7,11 +7,6 @@ import { jpegInfo, type LevelSpec, type RecodedImage } from './imageBytes';
 export type { CompressLevel, LevelSpec, RecodedImage } from './imageBytes';
 export { IMAGE_LEVELS, PDF_LEVELS } from './imageBytes';
 
-/**
- * Decodes whatever the OS can read (JPEG, PNG, HEIC, WebP), shrinks it to
- * `spec.maxEdge` if it is larger, and writes a JPEG at `spec.quality`. EXIF
- * is dropped on the way. Runs in the OS image codecs, not in JavaScript.
- */
 export async function recodeToJpeg(source: Uint8Array | string, ext: string, spec: LevelSpec): Promise<RecodedImage> {
   const scratch = typeof source === 'string' ? null : scratchFile(source, ext);
   const uri = typeof source === 'string' ? source : scratch!.uri;

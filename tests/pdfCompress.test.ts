@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest';
 import { jpegInfo, type LevelSpec, pngFromScanlines, type Recoder } from '../src/features/edit/imageBytes';
 import { compressPdf } from '../src/features/edit/pdfCompress';
 
-/** A JPEG with a JFIF header and a start-of-frame but no scan: enough for anything that only reads the SOF. */
 function jpegStub(width: number, height: number, components: number, padding = 0): Uint8Array {
   const sof = [0xff, 0xc0, 0x00, 8 + 3 * components, 8, height >> 8, height & 0xff, width >> 8, width & 0xff, components];
   for (let i = 0; i < components; i++) sof.push(i + 1, 0x11, 0);
@@ -16,7 +15,6 @@ function jpegStub(width: number, height: number, components: number, padding = 0
 
 const spec: LevelSpec = { maxEdge: 200, quality: 0.6 };
 
-/** Pretends to be the OS: halves the image and returns a small 3-channel JPEG. */
 const fakeRecode: Recoder = async (source, ext, s) => {
   const info = ext === 'jpg' ? jpegInfo(source as Uint8Array) : pngSize(source as Uint8Array);
   if (info === null) throw new Error('not decodable');
@@ -68,7 +66,6 @@ describe('compressPdf', () => {
     const page = doc.addPage([600, 800]);
     const big = await doc.embedJpg(jpegStub(1600, 1200, 3, 5000));
     const small = await doc.embedJpg(jpegStub(100, 100, 3, 3000));
-    // A PNG with alpha becomes a Flate RGB image plus an SMask.
     const w = 400;
     const h = 300;
     const rgba = new Uint8Array((w * 4 + 1) * h);
@@ -81,10 +78,10 @@ describe('compressPdf', () => {
     const input = await doc.save({ useObjectStreams: false });
 
     const before = await images(input);
-    expect(before).toHaveLength(4); // big, small, flat, and flat's soft mask
+    expect(before).toHaveLength(4);
 
     const report = await compressPdf(input, spec, fakeRecode);
-    expect(report.images).toBe(2); // big and flat; small is under the pixel floor, the mask is skipped
+    expect(report.images).toBe(2);
     expect(report.recoded).toBe(2);
     expect(report.resized).toBe(2);
     expect(report.bytes.length).toBeLessThan(input.length);
@@ -95,7 +92,7 @@ describe('compressPdf', () => {
     const jpegs = byFilter('DCTDecode');
     const flates = byFilter('FlateDecode');
     expect(jpegs).toHaveLength(3);
-    expect(flates).toHaveLength(1); // the soft mask, untouched
+    expect(flates).toHaveLength(1);
     const widths = jpegs.map((s) => (s.dict.lookup(PDFName.of('Width')) as PDFNumber).asNumber()).sort((a, b) => a - b);
     expect(widths).toEqual([100, 200, 800]);
     for (const s of jpegs) {
@@ -121,10 +118,8 @@ describe('compressPdf', () => {
   });
 });
 
-/** RGBA PNG (colour type 6) from filtered scanlines, for the embed test. */
 function pngWithAlphaFrom(lines: Uint8Array, width: number, height: number): Uint8Array {
   const png = pngFromScanlines(lines, width, height, 3);
-  // Patch the colour type to RGBA and fix the IHDR CRC.
   png[8 + 8 + 9] = 6;
   const crcAt = 8 + 8 + 13;
   const crc = crc32(png, 8 + 4, crcAt);

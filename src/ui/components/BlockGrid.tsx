@@ -9,26 +9,13 @@ import { usePalette } from '../theme';
 interface Props {
   count: number;
   isSolved: (index: number) => boolean;
-  /** Any value that changes when the solved set changes. */
   tick: number;
 }
 
-/** Cells that get their own animated view. Above this the grid is drawn as two SVG paths. */
 const ANIMATED_MAX = 120;
-/** Most cells the SVG grid draws; bigger files get several blocks per cell. */
 const CELLS_MAX = 480;
 const ROWS_MAX = 12;
 
-/**
- * One cell per block, filling in whatever order the fountain solves them.
- *
- * Small files (≤120 blocks) get a view per cell that pops from 70% to 100%
- * with a 300 ms overshoot and turns green. Larger files are drawn as two
- * SVG paths, one for the unsolved bed and one for the solved fill, so a
- * 6 000-block PDF costs two native nodes instead of six thousand and the
- * camera keeps its share of the JavaScript thread. Above 480 blocks each
- * cell stands for several and fills from the bottom as its blocks land.
- */
 export function BlockGrid({ count, isSolved, tick }: Props) {
   const [width, setWidth] = useState(0);
   const layout = useMemo(() => layoutFor(count), [count]);
@@ -53,7 +40,6 @@ interface Layout {
   columns: number;
   rows: number;
   gap: number;
-  /** Blocks per cell. */
   perCell: number;
   cells: number;
 }
@@ -86,7 +72,6 @@ function PathGrid({ count, layout, cell, isSolved, tick, width, height }: Props 
   const inset = cell * 0.15;
   const small = cell * 0.7;
 
-  // The bed only depends on the layout.
   const bed = useMemo(() => {
     const parts: string[] = [];
     for (let i = 0; i < cells; i++) {
@@ -97,8 +82,6 @@ function PathGrid({ count, layout, cell, isSolved, tick, width, height }: Props 
     return parts.join('');
   }, [cells, columns, pitch, inset, small]);
 
-  // The fill is rebuilt on each tick: one rect per cell with anything solved,
-  // full for a finished cell, rising from the bottom for a partial one.
   const fill = useMemo(() => {
     const parts: string[] = [];
     for (let i = 0; i < cells; i++) {
@@ -114,7 +97,6 @@ function PathGrid({ count, layout, cell, isSolved, tick, width, height }: Props 
       parts.push(`M${x.toFixed(2)} ${(y + cell - h).toFixed(2)}h${cell.toFixed(2)}v${h.toFixed(2)}h${(-cell).toFixed(2)}z`);
     }
     return parts.join('');
-    // `tick` is the signal that `isSolved` answers differently now.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick, cells, perCell, count, columns, pitch, cell]);
 

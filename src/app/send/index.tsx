@@ -38,7 +38,6 @@ export default function Send() {
     if (opened.current) return;
     opened.current = true;
     if (file !== null) return;
-    // The picker is a native sheet; no spinner needed while it is up.
     void pick().then((result) => afterPick(result, true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -102,7 +101,6 @@ export default function Send() {
   );
 }
 
-/** Label left, mono value right. The value re-counts (slides up and fades) when it changes. */
 function Row({ label, value, animate = true }: { label: string; value: string; animate?: boolean }) {
   const c = usePalette();
   return (

@@ -15,10 +15,6 @@ import { COLOR, OVERSHOOT } from '@/ui/motion';
 import { radius, usePalette } from '@/ui/theme';
 import { mono, sans } from '@/ui/type';
 
-/**
- * Two confirmations and what happens next. Sealing the file (encrypt, split)
- * runs here so the key screen opens with the QR already built.
- */
 export default function Check() {
   const c = usePalette();
   const hold = useSettings((s) => s.keyHoldSeconds);
@@ -32,7 +28,6 @@ export default function Check() {
     if (busy) return;
     setBusy(true);
     try {
-      // Packing yields between chunks; hashing runs in the OS; only the AES pass holds the thread.
       await prepare((s) => setStep(s === 'packing' ? 'Packing' : s === 'hashing' ? 'Hashing' : 'Encrypting'));
       router.push('/send/key');
     } catch (e) {
@@ -63,7 +58,6 @@ export default function Check() {
   );
 }
 
-/** Radio-style confirmation. The tick draws itself with a 300 ms overshoot; the border turns green. */
 function CheckRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   const c = usePalette();
   const t = useSharedValue(value ? 1 : 0);

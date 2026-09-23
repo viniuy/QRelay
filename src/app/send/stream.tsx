@@ -16,10 +16,6 @@ import { reduceMotion } from '@/ui/motion';
 import { stage, usePalette } from '@/ui/theme';
 import { mono, sans } from '@/ui/type';
 
-/**
- * Black stage, white QR card, frames at the preset rate. Frames swap with no
- * transition on purpose: a crossfade blends modules and breaks scanning.
- */
 export default function Stream() {
   const c = usePalette();
   const { session, file, endSession } = useSend();
@@ -47,7 +43,6 @@ export default function Stream() {
     };
   }, [session, cache, keepAwake]);
 
-  // Pause while the key screen is on top, resume when it pops back.
   useFocusEffect(
     useCallback(() => {
       focused.current = true;

@@ -9,13 +9,9 @@ export type EditOp = 'merge' | 'compress' | 'pdfToWord' | 'wordToPdf' | 'imageTo
 export interface EditOpInfo {
   id: EditOp;
   label: string;
-  /** One line under the label. */
   hint: string;
-  /** Verb for the run button. */
   action: string;
-  /** Which files this edit makes sense for. */
   accepts: (mime: string) => boolean;
-  /** False when this build lacks the native engine; `why` says so on the tile. */
   available: boolean;
   why?: string;
 }
@@ -33,7 +29,6 @@ export const EDIT_OPS: readonly EditOpInfo[] = [
   { id: 'imageToWord', label: 'Image to Word', hint: 'Reads the text (OCR)', action: 'Read the text', accepts: isImage, available: false, why: 'Not in this build yet' },
 ];
 
-/** The ops that apply to a file, available ones first. */
 export function opsFor(mime: string): EditOpInfo[] {
   const fit = EDIT_OPS.filter((o) => o.accepts(mime));
   return [...fit.filter((o) => o.available), ...fit.filter((o) => !o.available)];
@@ -45,17 +40,12 @@ export interface EditOptions {
 
 export interface EditResult {
   file: PickedFile;
-  /** Headline, e.g. "23.4 KB → 11.2 KB". */
   line: string;
-  /** Short figure on the right, e.g. "−52%". */
   delta: string;
-  /** One sentence on what changed and what did not. */
   note: string;
-  /** Size before, for the comparison bars. */
   before: number;
 }
 
-/** Thrown for operations this build cannot run. The screen shows the message instead of pretending. */
 export class EditNotReady extends Error {
   constructor(message: string) {
     super(message);
@@ -69,12 +59,6 @@ const A4 = { w: 595.28, h: 841.89 };
 const MARGIN_MM = 12;
 const PT_PER_MM = 72 / 25.4;
 
-/**
- * Every operation runs on the phone. Compress, merge and image → PDF work
- * inside Expo Go (pdf-lib and fflate in JavaScript, the OS image codecs for
- * pixels). PDF ↔ Word and OCR need native modules and a development build;
- * until then their tiles say so.
- */
 export async function runEdit(op: EditOp, input: PickedFile, options: EditOptions, onProgress?: EditProgress): Promise<EditResult | null> {
   const info = EDIT_OPS.find((o) => o.id === op)!;
   if (!info.accepts(input.mime)) throw new EditNotReady(`${info.label} does not apply to this file.`);
@@ -103,7 +87,6 @@ async function imageToPdf(input: PickedFile, onProgress?: EditProgress): Promise
   let bytes = input.bytes;
   let mime = input.mime;
   if (mime !== 'image/png' && mime !== 'image/jpeg') {
-    // HEIC, WebP and friends: let the OS turn them into a JPEG pdf-lib can embed.
     const jpeg = await recodeToJpeg(input.bytes, ext(input.name) || 'img', { maxEdge: 4096, quality: 0.9 });
     bytes = jpeg.bytes;
     mime = 'image/jpeg';
@@ -129,7 +112,6 @@ async function imageToPdf(input: PickedFile, onProgress?: EditProgress): Promise
   };
 }
 
-/** Joins PDFs in the given order. Shared with the Send screen, which merges PDFs picked together. */
 export async function mergePdfs(sources: PickedFile[], onProgress?: EditProgress): Promise<EditResult> {
   const first = sources[0];
   const out = await PDFDocument.create();

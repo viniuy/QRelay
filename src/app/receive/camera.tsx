@@ -35,11 +35,6 @@ import { COLOR, haptic, reduceMotion } from "@/ui/motion";
 import { radius, usePalette } from "@/ui/theme";
 import { mono, sans } from "@/ui/type";
 
-/**
- * Viewfinder with a reticle that snaps tight and turns amber on the key,
- * green on data; a block grid that fills as the fountain solves; six live
- * stats. Lands on Done when the file verifies.
- */
 export default function Camera() {
   const c = usePalette();
   const state = useReceive();
@@ -56,7 +51,6 @@ export default function Camera() {
     };
   }, [keepAwake]);
 
-  // The ETA and goodput read the clock; refresh them twice a second while receiving.
   useEffect(() => {
     if (state.phase !== "receiving" && state.phase !== "keyLocked") return;
     const t = setInterval(() => forceTick((n) => n + 1), 500);
@@ -225,7 +219,6 @@ export default function Camera() {
   );
 }
 
-/** Status pill over the viewfinder. Background eases between the three phases; the dot blinks while live. */
 function StatePill({
   text,
   tint,

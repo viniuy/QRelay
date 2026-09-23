@@ -11,7 +11,6 @@ interface Props {
   label: string;
 }
 
-/** Knob springs 20 pt; the track color changes in 180 ms. */
 export function Toggle({ value, onChange, label }: Props) {
   const c = usePalette();
   const x = useSharedValue(value ? 1 : 0);

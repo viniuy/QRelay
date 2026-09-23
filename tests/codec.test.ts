@@ -50,7 +50,7 @@ describe('base45', () => {
 
   it('rejects bad input', () => {
     expect(() => base45Decode('A')).toThrow();
-    expect(() => base45Decode('GGW')).toThrow(); // 0xFFFF + 1
+    expect(() => base45Decode('GGW')).toThrow();
     expect(() => base45Decode('ab')).toThrow();
   });
 });
@@ -104,7 +104,6 @@ describe('framing', () => {
     const unknown = Uint8Array.from(enc);
     unknown[flagsAt] = 0x02;
     expect(decodeKeyFrame(unknown)).toBeNull();
-    // Not packed but sizes disagree: not a frame we wrote.
     expect(decodeKeyFrame(encodeKeyFrame({ ...key, rawSize: 1 }))).toBeNull();
   });
 
@@ -165,7 +164,6 @@ describe('BlockSelector', () => {
   });
 });
 
-/** Frames the sender had to show before the decoder completed. */
 function transfer(enc: FountainEncoder, original: Uint8Array, loss: number, seed: number, startAt = 0): number {
   const dec = new FountainDecoder(enc.blockCount, enc.blockSize);
   const r = new FrameRng(seed);
@@ -177,7 +175,7 @@ function transfer(enc: FountainEncoder, original: Uint8Array, loss: number, seed
     shown++;
     if (r.nextDouble() >= loss) {
       dec.add(frame, payload);
-      if (r.nextDouble() < 0.3) dec.add(frame, payload); // camera saw it twice
+      if (r.nextDouble() < 0.3) dec.add(frame, payload);
     }
     frame++;
   }

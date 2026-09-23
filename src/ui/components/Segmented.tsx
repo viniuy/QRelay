@@ -12,10 +12,6 @@ interface Props<T extends string> {
   onChange: (value: T) => void;
 }
 
-/**
- * Pill segmented control. The thumb slides on a spring; label colors cross
- * fade in 180 ms; a selection haptic marks the change.
- */
 export function Segmented<T extends string>({ options, value, onChange }: Props<T>) {
   const c = usePalette();
   const [width, setWidth] = useState(0);

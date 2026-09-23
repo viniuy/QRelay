@@ -17,18 +17,11 @@ interface Props {
   trailing?: React.ReactNode;
   children: React.ReactNode;
   actions?: React.ReactNode;
-  /** The black stream stage. */
   dark?: boolean;
-  /** Skip the body's entrance (screens that manage their own). */
   still?: boolean;
   scroll?: boolean;
 }
 
-/**
- * Screen layout every screen shares: top bar, body, action stack at the
- * bottom. The body slides up 12 pt and fades in on mount; the action stack
- * fades a beat later.
- */
 export function ScreenFrame({ title, titleNode, showBack = true, onBack, trailing, children, actions, dark = false, still = false }: Props) {
   const c = usePalette();
   const insets = useSafeAreaInsets();

@@ -20,9 +20,7 @@ interface ReceiveState {
   frames: number;
   duplicates: number;
   decodeFps: number;
-  /** A frame from another sender's session showed up. */
   otherSessionSeen: boolean;
-  /** Data frames are arriving but no key has been read yet. */
   needKeySeen: boolean;
   startedAt: number;
   dataStartedAt: number | null;
@@ -30,7 +28,6 @@ interface ReceiveState {
   saved: SavedFile | null;
   bytes: Uint8Array | null;
   error: string | null;
-  /** Changes whenever the solved set changes; the block grid keys off it. */
   tick: number;
   reset: () => void;
   feed: (raw: string) => void;
@@ -125,7 +122,6 @@ export const useReceive = create<ReceiveState>((set, get) => ({
             dataStartedAt: prev.dataStartedAt ?? now,
             tick: prev.solved === session.solvedCount ? prev.tick : prev.tick + 1,
           }));
-        // Camera callbacks can arrive 20+ times a second; the screen needs about 10.
         if (event === 'complete' || now - lastPublish > 90) {
           lastPublish = now;
           if (publishTimer) clearTimeout(publishTimer);
@@ -150,7 +146,6 @@ async function finish(set: (partial: Partial<ReceiveState>) => void): Promise<vo
   finishing = true;
   const key = session.key!;
   try {
-    // Let the "Verifying" frame paint before the decrypt burns the thread.
     await new Promise((r) => setTimeout(r, 30));
     const bytes = await session.finish();
     const saved = saveBytes(bytes, key.name, 'received');
@@ -178,7 +173,6 @@ async function finish(set: (partial: Partial<ReceiveState>) => void): Promise<vo
   }
 }
 
-/** Seconds left at the current solve rate, null before there is a rate. */
 export function etaSeconds(s: ReceiveState): number | null {
   if (s.dataStartedAt === null || s.solved < 2) return null;
   const secs = (Date.now() - s.dataStartedAt) / 1000;

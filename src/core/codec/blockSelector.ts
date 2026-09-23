@@ -1,22 +1,7 @@
 import { FrameRng } from './frameRng';
 
-/**
- * Which blocks a frame with a given seed combines.
- *
- * The stream runs in cycles of `K + R` frames. The first K frames of a cycle
- * are the in-order pass (frame q is block q, untouched). The next R are dense
- * repair frames: every block is included with probability 1/2, drawn from a
- * generator keyed by the seed. A receiver that missed `u` blocks in the pass
- * needs about `u + 2` repair frames to get back to full rank, no matter which
- * blocks it missed, which is as good as no feedback allows. Then the cycle
- * repeats for receivers that joined late.
- *
- * Seeds keep counting up across cycles, so every frame has a unique seed and
- * duplicates are cheap to drop.
- */
 export class BlockSelector {
   readonly repairPerCycle: number;
-  /** 32-bit words in a mask. */
   readonly words: number;
 
   constructor(readonly blockCount: number) {
@@ -33,12 +18,10 @@ export class BlockSelector {
     return seed % this.cycle < this.blockCount;
   }
 
-  /** Block index for a systematic seed; meaningless for repair seeds. */
   systematicIndex(seed: number): number {
     return seed % this.cycle;
   }
 
-  /** Bit mask over the K blocks, bit `i` set when block `i` is in the frame. */
   maskFor(seed: number): Uint32Array {
     const mask = new Uint32Array(this.words);
     const q = seed % this.cycle;

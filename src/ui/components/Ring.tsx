@@ -8,10 +8,6 @@ import { usePalette } from '../theme';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-/**
- * Countdown ring around the key QR. `progress` runs 0 → 1 as the hold time
- * elapses; the arc drains clockwise from the top.
- */
 export function Ring({ size, progress, children }: { size: number; progress: SharedValue<number>; children: React.ReactNode }) {
   const c = usePalette();
   const r = size / 2 - 3;
@@ -41,7 +37,6 @@ export function Ring({ size, progress, children }: { size: number; progress: Sha
   );
 }
 
-/** Soft ring expanding out of the key. Marks that this QR is live. */
 function Pulse({ size, delay }: { size: number; delay: number }) {
   const c = usePalette();
   const t = useSharedValue(0);

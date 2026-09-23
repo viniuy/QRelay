@@ -4,27 +4,15 @@ import { cipherLength, decodeDataFrame, decodeKeyFrame, KeyFrame, sameSession } 
 import { unpack } from '../codec/pack';
 import { decrypt, VerificationError, verifyHash, verifyHashAsync } from '../crypto/sessionCrypto';
 
-/** What one scanned QR meant to the receiver. */
 export type ScanEvent =
-  /** Not one of ours (or a malformed frame). Nothing changes. */
   | 'ignored'
-  /** A data frame arrived before any key. The sender needs to show the key. */
   | 'needKey'
-  /** The key frame was read; receiving can start. */
   | 'keyLocked'
-  /** A frame from a different session than the locked key. */
   | 'otherSession'
-  /** Same frame seen again (cameras catch each frame two or three times). */
   | 'duplicate'
-  /** A new frame that advanced or fed the decode. */
   | 'frame'
-  /** The last block landed; call finish(). */
   | 'complete';
 
-/**
- * Receiver state machine: waits for a key, then feeds data frames to the
- * decoder, then decrypts and verifies.
- */
 export class ReceiverSession {
   key: KeyFrame | null = null;
   decoder: FountainDecoder | null = null;
@@ -95,18 +83,12 @@ export class ReceiverSession {
     }
   }
 
-  /**
-   * Decrypts, unpacks and verifies the rebuilt file. Throws
-   * VerificationError on a bad tag, a payload that does not inflate to the
-   * announced size, or a wrong hash.
-   */
   async finish(): Promise<Uint8Array> {
     const file = this.rebuild();
     await verifyHashAsync(file, this.key!.sha256);
     return file;
   }
 
-  /** Synchronous twin of `finish` for tests. */
   finishSync(): Uint8Array {
     const file = this.rebuild();
     verifyHash(file, this.key!.sha256);

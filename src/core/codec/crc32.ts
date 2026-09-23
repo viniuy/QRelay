@@ -1,10 +1,3 @@
-/**
- * CRC-32 (IEEE 802.3, reflected, polynomial 0xEDB88320), the zlib/PNG variant.
- *
- * QR has its own Reed-Solomon correction, so a wrong decode is rare. It is
- * also catastrophic for a fountain decoder, because one bad payload poisons
- * every block it touches. The CRC is the belt to that suspender.
- */
 const TABLE = (() => {
   const t = new Uint32Array(256);
   for (let i = 0; i < 256; i++) {

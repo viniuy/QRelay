@@ -7,11 +7,6 @@ export interface RenderedFrame {
   path: string;
 }
 
-/**
- * Builds frames ahead of the stream, one per event-loop turn, so the UI
- * thread never blocks for more than a few milliseconds. A v18 frame takes
- * about 3 ms to XOR, base45-encode, QR-encode and turn into a path.
- */
 export class FrameCache {
   private readonly frames = new Map<number, RenderedFrame>();
   private queue: number[] = [];
@@ -24,7 +19,6 @@ export class FrameCache {
     return this.frames.get(seed) ?? null;
   }
 
-  /** Makes sure seeds `from .. from + window` are built or queued. */
   ensure(from: number): void {
     for (let s = from; s < from + this.window; s++) {
       if (!this.frames.has(s) && !this.queue.includes(s)) this.queue.push(s);
@@ -33,7 +27,6 @@ export class FrameCache {
     this.pump();
   }
 
-  /** Builds one frame right now (used for the very first frame). */
   build(seed: number): RenderedFrame {
     const cached = this.frames.get(seed);
     if (cached) return cached;

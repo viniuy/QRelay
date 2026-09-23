@@ -7,7 +7,6 @@ export interface PickedFile {
   name: string;
   mime: string;
   bytes: Uint8Array;
-  /** Where the bytes came from, when they came from a file. */
   uri?: string;
 }
 
@@ -45,11 +44,6 @@ export type PickResult =
   | { kind: 'cancelled' }
   | { kind: 'tooLarge'; name: string; size: number };
 
-/**
- * Opens the system picker. Several files may be chosen at once (the Send
- * screen merges PDFs picked together). Sizes are checked before a byte is
- * read.
- */
 export async function pickFiles(options: { maxBytes?: number; mimeTypes?: string | string[] } = {}): Promise<PickResult> {
   const max = options.maxBytes ?? Number.POSITIVE_INFINITY;
   const picked = await File.pickFileAsync({ multipleFiles: true, mimeTypes: options.mimeTypes });
@@ -67,7 +61,6 @@ function safeName(name: string): string {
   return name.replace(/[\\/:*?"<>|]/g, '_') || 'received.bin';
 }
 
-/** Writes into the app's documents folder under `sub`, never overwriting. */
 export function saveBytes(bytes: Uint8Array, name: string, sub: 'received' | 'edited'): SavedFile {
   const dir = new Directory(Paths.document, sub);
   if (!dir.exists) dir.create({ intermediates: true });
@@ -86,7 +79,6 @@ export function saveBytes(bytes: Uint8Array, name: string, sub: 'received' | 'ed
   return { uri: candidate.uri, name: candidate.name };
 }
 
-/** A scratch file in the cache folder, for native APIs that want a URI. */
 export function scratchFile(bytes: Uint8Array, ext: string): File {
   const file = new File(Paths.cache, `qrelay-${Date.now()}-${Math.floor(Math.random() * 1e6)}.${ext}`);
   file.write(bytes);
@@ -101,16 +93,11 @@ export function fileExists(uri: string): boolean {
   }
 }
 
-/** The share sheet, which on iOS is also how you save to Files or open in another app. */
 export async function shareFile(uri: string, mime: string): Promise<void> {
   if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is not available on this device.');
   await Sharing.shareAsync(uri, { mimeType: mime, dialogTitle: 'QRelay' });
 }
 
-/**
- * Opens the file in whatever app handles it. Android has a real "open with";
- * iOS routes through the share sheet, whose "Open in…" row does the same job.
- */
 export async function openFile(uri: string, mime: string): Promise<void> {
   if (Platform.OS === 'android') {
     const contentUri = new File(uri).contentUri;

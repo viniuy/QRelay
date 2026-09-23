@@ -1,10 +1,6 @@
 import React from 'react';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-/**
- * The few icons the app needs, drawn in one stroke style (1.8 px at 24 pt,
- * round caps). Same set as the plan page, so the prototype and the app match.
- */
 export type IconName =
   | 'back'
   | 'settings'
@@ -105,7 +101,6 @@ export function Icon({ name, size = 24, color, strokeWidth = 1.8 }: Props) {
   );
 }
 
-/** The mark: three finder patterns and an amber relay arrow. */
 export function Mark({ size = 22, ink, paper, accent }: { size?: number; ink: string; paper: string; accent: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 34 34">

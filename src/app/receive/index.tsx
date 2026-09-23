@@ -7,11 +7,6 @@ import { Button } from '@/ui/components/Button';
 import { BigTitle, Gap, NoteBox, Sub } from '@/ui/components/parts';
 import { ScreenFrame } from '@/ui/components/ScreenFrame';
 
-/**
- * Why the camera is needed and where to hold the phone. The OS permission
- * prompt appears from here, so the camera screen opens straight into a live
- * viewfinder.
- */
 export default function Receive() {
   const [permission, request] = useCameraPermissions();
   const [busy, setBusy] = useState(false);

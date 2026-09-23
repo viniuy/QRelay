@@ -91,7 +91,6 @@ describe('sender to receiver', () => {
   });
 
   it('packs a compressible file, streams fewer blocks and unpacks it on the other side', async () => {
-    // 60 KB of text-like bytes: deflate takes it well under a fifth.
     const file = utf8.encode(Array.from({ length: 1500 }, (_, i) => `line ${i}: the quick brown fox jumps over the lazy dog
 `).join(''));
     const plain = SenderSession.createSync({ bytes: randomData(file.length, 9), name: 'r.bin', mime: 'application/octet-stream' }, presetById('balanced'));
@@ -136,8 +135,6 @@ describe('sender to receiver', () => {
   });
 
   it('pins one QR version for a whole stream, so the symbol never changes size', () => {
-    // Left to choose, the encoder packs digit runs into numeric mode and the
-    // version wanders with the ciphertext, resizing the symbol every frame.
     const bytes = Uint8Array.from({ length: 60000 }, (_, i) => (i * 2654435761) & 255);
     for (const preset of PRESETS) {
       const s = SenderSession.createSync({ name: 'x.bin', mime: 'application/octet-stream', bytes }, preset);

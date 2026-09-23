@@ -7,7 +7,6 @@ import { usePalette } from '../theme';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-/** The check draws itself in 550 ms after a short beat. Path length is about 54 units. */
 export function Checkmark({ size = 96 }: { size?: number }) {
   const c = usePalette();
   const t = useSharedValue(0);

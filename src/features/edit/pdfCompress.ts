@@ -5,17 +5,13 @@ import { type LevelSpec, pngFromScanlines, type Recoder } from './imageBytes';
 
 export interface PdfCompressReport {
   bytes: Uint8Array;
-  /** Image XObjects found, large enough to matter. */
   images: number;
-  /** Of those, re-encoded smaller. */
   recoded: number;
-  /** Of those, downscaled as well. */
   resized: number;
 }
 
 export type PdfProgress = (done: number, total: number) => void;
 
-/** Images under this many pixels are icons and rules; not worth a JPEG. */
 const MIN_PIXELS = 40_000;
 
 const N = {
@@ -45,23 +41,11 @@ const N = {
   N: PDFName.of('N'),
 };
 
-/**
- * Shrinks a PDF by re-encoding the images inside it, which is where the
- * megabytes are. JPEG images are decoded and re-saved smaller; raw
- * (Flate) RGB and grey images are wrapped as PNG, then go the same way.
- * Text, vectors, fonts and forms are not touched. Soft masks, stencil
- * masks, colour-keyed images, indexed palettes and anything with a Decode
- * array are left alone rather than risk changing how they look.
- *
- * Saving with object streams also compresses the file's own structure, so
- * a PDF with no images still comes out a little smaller.
- */
 export async function compressPdf(input: Uint8Array, spec: LevelSpec, recode: Recoder, onProgress?: PdfProgress): Promise<PdfCompressReport> {
   const doc = await PDFDocument.load(input, { ignoreEncryption: true, updateMetadata: false });
   const ctx = doc.context;
   const objects = ctx.enumerateIndirectObjects();
 
-  // Anything referenced as a mask keeps its exact samples.
   const masks = new Set<string>();
   for (const [, obj] of objects) {
     if (!(obj instanceof PDFStream)) continue;
@@ -105,7 +89,6 @@ export async function compressPdf(input: Uint8Array, spec: LevelSpec, recode: Re
       recoded++;
       if (out.resized) resized++;
     } catch {
-      // The OS could not decode this one; it stays as it was.
     }
   }
   onProgress?.(candidates.length, candidates.length);
@@ -119,7 +102,6 @@ interface ImageSource {
   ext: 'jpg' | 'png';
 }
 
-/** The image as a file the OS can decode, or null when this one should be left alone. */
 function sourceFor(stream: PDFRawStream): ImageSource | null {
   const dict = stream.dict;
   const stencil = dict.lookup(N.ImageMask);
@@ -144,7 +126,6 @@ function sourceFor(stream: PDFRawStream): ImageSource | null {
     if (raw === null) return null;
     const rowBytes = width * channels;
     if (predictor >= 10) {
-      // PNG predictors: each row already starts with its filter byte.
       const colors = parms instanceof PDFDict ? (numberAt(parms, N.Colors) ?? 1) : 1;
       const columns = parms instanceof PDFDict ? (numberAt(parms, N.Columns) ?? 1) : 1;
       if (colors !== channels || columns !== width || raw.length !== (rowBytes + 1) * height) return null;
@@ -158,7 +139,6 @@ function sourceFor(stream: PDFRawStream): ImageSource | null {
   return null;
 }
 
-/** FlateDecode is zlib-wrapped by the spec; a few writers emit raw deflate, so try both. */
 function inflate(data: Uint8Array): Uint8Array | null {
   try {
     return unzlibSync(data);
@@ -189,7 +169,6 @@ function namesOf(v: PDFObject | undefined): PDFName[] {
   return [];
 }
 
-/** 1, 3 or 4 for the colour spaces the OS codecs can round-trip; null for the rest. */
 function channelsOf(v: PDFObject | undefined): 1 | 3 | 4 | null {
   if (v === N.DeviceGray || v === N.CalGray) return 1;
   if (v === N.DeviceRGB || v === N.CalRGB) return 3;

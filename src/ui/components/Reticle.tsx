@@ -6,10 +6,6 @@ import { COLOR, SNAP } from '../motion';
 import { usePalette } from '../theme';
 import type { PhaseTint } from './parts';
 
-/**
- * Four corners over the viewfinder. Wide and white while searching; they
- * snap in and turn amber on the key, green on data.
- */
 export function Reticle({ tint }: { tint: PhaseTint }) {
   const c = usePalette();
   const locked = tint !== 'neutral';

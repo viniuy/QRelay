@@ -9,26 +9,18 @@ import { sans } from '../type';
 import { Press } from './Press';
 
 export type ButtonKind =
-  /** Ink pill. The one main action on a screen. */
   | 'primary'
-  /** Outline. The alternative next to a primary. */
   | 'secondary'
-  /** Amber. Only for the key phase. */
   | 'key'
-  /** Green. Only for locked data. */
   | 'lock'
-  /** Text only. The escape hatch, never the main action. */
   | 'ghost'
-  /** White pill for the black stream stage. */
   | 'onBlack'
-  /** Outline for the black stream stage. */
   | 'onBlackSecondary';
 
 interface Props {
   label: string;
   onPress?: () => void;
   kind?: ButtonKind;
-  /** Label fades out, a ring spins in place, the width holds. */
   busy?: boolean;
   disabled?: boolean;
   icon?: IconName;
@@ -113,7 +105,6 @@ export function Button({ label, onPress, kind = 'primary', busy = false, disable
   );
 }
 
-/** Round 44 pt icon control, used for back, pause, pick-another-file. */
 export function IconButton({
   icon,
   label,

@@ -16,12 +16,6 @@ import { haptic } from '@/ui/motion';
 import { usePalette } from '@/ui/theme';
 import { mono } from '@/ui/type';
 
-/**
- * The single key QR inside a countdown ring. When the ring completes the
- * stream starts; "Hold the key" pauses it; "Start the stream now" skips it.
- * With `again=1` the screen was opened from the stream for a receiver that
- * missed the key, and pops back to the stream when done.
- */
 export default function Key() {
   const c = usePalette();
   const { again } = useLocalSearchParams<{ again?: string }>();
@@ -54,7 +48,6 @@ export default function Key() {
     else router.replace('/send/stream');
   };
 
-  // Run the ring on the UI thread; the remaining-seconds label follows it.
   useEffect(() => {
     if (!key) return;
     const remaining = (1 - progress.value) * keyHoldSeconds * 1000;

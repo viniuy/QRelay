@@ -1,16 +1,10 @@
 import { BlockSelector } from './blockSelector';
 
-/** What one incoming frame did. */
 export type AddResult =
-  /** Seed already seen (the camera caught the same frame twice). */
   | 'duplicate'
-  /** Carried nothing new: every block in it was already known, or it was a combination of frames already held. */
   | 'redundant'
-  /** Stored as an equation; needs more frames before it resolves. */
   | 'kept'
-  /** Solved at least one new block. */
   | 'solved'
-  /** That frame finished the file. */
   | 'complete';
 
 class Row {
@@ -62,21 +56,9 @@ function xorInto(target: Uint8Array, other: Uint8Array): void {
   for (let i = 0; i < target.length; i++) target[i] ^= other[i];
 }
 
-/**
- * Incremental Gaussian elimination over GF(2).
- *
- * Each frame is one equation over the K blocks. Known blocks are XORed out on
- * arrival, then the row is reduced against the pivot rows held so far. A row
- * that ends with one bit solves that block on the spot and the solution is
- * pushed through every stored row (which is what makes the in-order pass
- * decode instantly). When every unsolved block has a pivot, one
- * back-substitution finishes the rest. Cost per frame is one pass over the
- * stored rows, well under a millisecond at K = 2000.
- */
 export class FountainDecoder {
   private readonly selector: BlockSelector;
   private readonly solved: (Uint8Array | null)[];
-  /** Echelon rows keyed by pivot column (the row's lowest set bit). */
   private readonly pivots = new Map<number, Row>();
   private readonly seen = new Set<number>();
   private solvedCountValue = 0;
@@ -103,7 +85,6 @@ export class FountainDecoder {
     return this.seen.size;
   }
 
-  /** Equations held that have not resolved yet. */
   get pendingCount(): number {
     return this.pivots.size;
   }
@@ -112,7 +93,6 @@ export class FountainDecoder {
     return this.solved[block] !== null;
   }
 
-  /** Feed one frame. `payload` must be exactly `blockSize` bytes. */
   add(seed: number, payload: Uint8Array): AddResult {
     if (payload.length !== this.blockSize) {
       throw new Error(`payload is ${payload.length} bytes, block size is ${this.blockSize}`);
@@ -143,7 +123,6 @@ export class FountainDecoder {
     return row.isEmpty() ? 'redundant' : 'kept';
   }
 
-  /** The ciphertext, trimmed to `length`. Only valid once complete. */
   assemble(length: number): Uint8Array {
     if (!this.isComplete) throw new Error('decode is not complete');
     const out = new Uint8Array(this.blockCount * this.blockSize);
@@ -192,10 +171,6 @@ export class FountainDecoder {
     }
   }
 
-  /**
-   * With a pivot for every unsolved column the system is triangular: walk
-   * pivots from the highest column down, substituting as we go.
-   */
   private backSubstitute(): void {
     const columns = Array.from(this.pivots.keys()).sort((a, b) => b - a);
     for (const c of columns) {
@@ -208,8 +183,6 @@ export class FountainDecoder {
         if (!row.has(b)) continue;
         const known = this.solved[b];
         if (known === null) {
-          // Not triangular after all (a column without a pivot above us);
-          // keep the row and wait for more frames.
           stuck = true;
           break;
         }

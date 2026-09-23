@@ -1,10 +1,5 @@
 import { useColorScheme } from 'react-native';
 
-/**
- * Paper and ink, with two phase colors: amber for the key, green for locked
- * data. Buttons are ink; color appears only where the protocol is in that
- * phase, so a glance at the screen says which step you are on.
- */
 export const light = {
   paper: '#F3F4F0',
   paper2: '#FFFFFF',
@@ -59,7 +54,6 @@ export function usePalette(): Palette {
   return useColorScheme() === 'dark' ? dark : light;
 }
 
-/** Colors for the black stream stage, the same in both themes. */
 export const stage = {
   bg: '#000000',
   card: '#FFFFFF',

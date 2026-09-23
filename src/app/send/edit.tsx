@@ -168,7 +168,6 @@ export default function Edit() {
   );
 }
 
-/** Lifts 2 pt with a shadow when selected; the check pops in with an overshoot. Muted tiles are ops this build cannot run. */
 function OpTile({ icon, label, hint, selected, disabled, muted = false, onPress }: { icon: IconName; label: string; hint: string; selected: boolean; disabled: boolean; muted?: boolean; onPress: () => void }) {
   const c = usePalette();
   const t = useSharedValue(selected ? 1 : 0);
@@ -215,7 +214,6 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
-/** Before/after with two bars that grow from the left. */
 function ResultCard({ result }: { result: EditResult }) {
   const c = usePalette();
   const after = result.file.bytes.length;

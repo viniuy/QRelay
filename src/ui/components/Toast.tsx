@@ -24,7 +24,6 @@ export function toast(text: string): void {
   useToast.getState().show(text);
 }
 
-/** Ink pill at the bottom of the screen. Springs up, holds 1.5 s, drops. */
 export function ToastHost() {
   const c = usePalette();
   const insets = useSafeAreaInsets();

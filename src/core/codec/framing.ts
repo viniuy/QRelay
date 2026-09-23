@@ -1,7 +1,6 @@
 import { crc32 } from './crc32';
 import type { PackMethod } from './pack';
 
-/** Wire format version. Bump when a layout below changes. */
 export const PROTOCOL_VERSION = 2;
 
 export const SESSION_ID_LENGTH = 4;
@@ -9,39 +8,22 @@ export const KEY_LENGTH = 32;
 export const NONCE_LENGTH = 12;
 export const SHA256_LENGTH = 32;
 
-/** AES-GCM appends a 16-byte tag; the stream carries `fileSize + 16` bytes. */
 export const GCM_TAG_LENGTH = 16;
 
-const MAGIC_KEY = [0x51, 0x4b]; // 'QK'
-const MAGIC_DATA = [0x51, 0x44]; // 'QD'
+const MAGIC_KEY = [0x51, 0x4b];
+const MAGIC_DATA = [0x51, 0x44];
 
 const utf8 = new TextEncoder();
 const utf8d = new TextDecoder();
 
-/**
- * The one QR shown before the stream. Everything the receiver needs, nothing
- * the stream repeats.
- *
- * ```
- * magic 'QK' (2) · ver (1) · session (4) · key (32) · nonce (12) · K (2) ·
- * block size (2) · payload size (4) · flags (1) · raw size (4) ·
- * sha-256 (32) · mime (1+n) · name (1+n)
- * ```
- *
- * Flags, bit 0: the payload is deflated; inflate it to `rawSize` bytes after
- * decrypting. The SHA-256 is always over the original file, so what gets
- * saved is what gets checked.
- */
 export interface KeyFrame {
   sessionId: Uint8Array;
   key: Uint8Array;
   nonce: Uint8Array;
   blockCount: number;
   blockSize: number;
-  /** Plaintext bytes in the stream (after packing, before the GCM tag). */
   fileSize: number;
   packed: PackMethod;
-  /** Size of the original file. Equal to `fileSize` when not packed. */
   rawSize: number;
   sha256: Uint8Array;
   mime: string;
@@ -85,7 +67,6 @@ export function encodeKeyFrame(k: KeyFrame): Uint8Array {
   return out;
 }
 
-/** Null when `bytes` is not a key frame of this version. */
 export function decodeKeyFrame(bytes: Uint8Array): KeyFrame | null {
   if (bytes.length < KEY_FIXED_LENGTH + 2) return null;
   if (bytes[0] !== MAGIC_KEY[0] || bytes[1] !== MAGIC_KEY[1] || bytes[2] !== PROTOCOL_VERSION) return null;
@@ -112,18 +93,10 @@ export function decodeKeyFrame(bytes: Uint8Array): KeyFrame | null {
   return { sessionId, key, nonce, blockCount, blockSize, fileSize, packed, rawSize, sha256, mime, name };
 }
 
-/** Four hex characters of the session id, for labels. */
 export function sessionLabel(sessionId: Uint8Array): string {
   return Array.from(sessionId.subarray(0, 2), (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
-/**
- * One frame of the stream.
- *
- * ```
- * magic 'QD' (2) · ver (1) · session (4) · seed (4) · K (2) · payload (B) · crc-32 (4)
- * ```
- */
 export interface DataFrame {
   sessionId: Uint8Array;
   seed: number;
@@ -149,7 +122,6 @@ export function encodeDataFrame(f: DataFrame): Uint8Array {
   return out;
 }
 
-/** Null on wrong magic, version, length or CRC. */
 export function decodeDataFrame(bytes: Uint8Array): DataFrame | null {
   if (bytes.length < DATA_OVERHEAD + 1) return null;
   if (bytes[0] !== MAGIC_DATA[0] || bytes[1] !== MAGIC_DATA[1] || bytes[2] !== PROTOCOL_VERSION) return null;

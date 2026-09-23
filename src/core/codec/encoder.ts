@@ -1,12 +1,5 @@
 import { BlockSelector, maskHas } from './blockSelector';
 
-/**
- * Fountain encoder over fixed-size blocks.
- *
- * Frames come from BlockSelector: an in-order pass, then dense repair frames,
- * then the pass again. The sender can keep going forever; there is no last
- * frame.
- */
 export class FountainEncoder {
   readonly blocks: Uint8Array[];
   readonly selector: BlockSelector;

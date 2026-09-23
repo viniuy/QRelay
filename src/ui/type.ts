@@ -1,10 +1,5 @@
 import type { TextStyle } from 'react-native';
 
-/**
- * Fonts ship with the app (SIL OFL, see assets/fonts). One file per weight,
- * registered under its own family name, so `fontFamily` alone picks the cut
- * on both platforms and there is no runtime weight matching to go wrong.
- */
 export const fontAssets = {
   'Bricolage-400': require('../../assets/fonts/BricolageGrotesque-400.ttf'),
   'Bricolage-500': require('../../assets/fonts/BricolageGrotesque-500.ttf'),
@@ -24,7 +19,6 @@ interface Opts {
   letterSpacing?: number;
 }
 
-/** UI text in Bricolage Grotesque. */
 export function sans(size: number, weight: SansWeight = 400, opts: Opts = {}): TextStyle {
   return {
     fontFamily: `Bricolage-${weight}`,
@@ -35,7 +29,6 @@ export function sans(size: number, weight: SansWeight = 400, opts: Opts = {}): T
   };
 }
 
-/** Telemetry and labels in JetBrains Mono. */
 export function mono(size: number, weight: MonoWeight = 400, opts: Opts = {}): TextStyle {
   return {
     fontFamily: `Mono-${weight}`,
@@ -47,7 +40,6 @@ export function mono(size: number, weight: MonoWeight = 400, opts: Opts = {}): T
   };
 }
 
-/** Mono uppercase eyebrow. */
 export function eyebrow(color: string): TextStyle {
   return { ...mono(11, 500, { color, letterSpacing: 0.9 }), textTransform: 'uppercase' };
 }

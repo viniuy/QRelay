@@ -18,10 +18,6 @@ interface Props {
   hitSlop?: number;
 }
 
-/**
- * The press feel every control shares: 4% squeeze on touch-down, spring back
- * with one overshoot on release, optional haptic on the way down.
- */
 export function Press({
   children,
   onPress,

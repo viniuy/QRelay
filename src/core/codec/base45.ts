@@ -1,10 +1,3 @@
-/**
- * Base45 (RFC 9285).
- *
- * The alphabet is exactly the QR alphanumeric character set, so an encoded
- * string goes into QR alphanumeric mode at 5.5 bits per character: 16 bits of
- * data cost 16.5 bits of QR, against 21.3 for base64 in byte mode.
- */
 export const BASE45_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
 
 const LOOKUP = new Int16Array(128).fill(-1);
@@ -27,7 +20,6 @@ export function base45Encode(bytes: Uint8Array): string {
   return out.join('');
 }
 
-/** Throws on a bad length, character or out-of-range group. */
 export function base45Decode(text: string): Uint8Array {
   const n = text.length;
   if (n % 3 === 1) throw new Error('base45: length mod 3 must not be 1');

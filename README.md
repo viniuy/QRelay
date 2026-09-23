@@ -4,8 +4,6 @@ Send a file from one phone to another with nothing but a screen and a camera. No
 
 The sender encrypts the file (AES-256-GCM), splits the ciphertext into blocks and shows an endless stream of fountain-coded QR frames. Before the stream, one key QR is shown for a few seconds; only a receiver that scanned it can decrypt what follows. The receiver points its camera at the sender, rebuilds the file as frames land, verifies the GCM tag and the SHA-256, and saves it.
 
-Plan and interactive prototype: https://claude.ai/artifact/7CLCn6RxpS1qrRU3cscz8Q
-
 Expo SDK 57 · React Native 0.86 · TypeScript. Runs in Expo Go on iOS and Android; no Mac needed to develop.
 
 ## Run it on your phone
@@ -57,7 +55,7 @@ assets/fonts/             Bricolage Grotesque + JetBrains Mono, SIL OFL
 
 ## Wire format
 
-Key frame (about 130 bytes, QR v8 at ECC M):
+Key frame (about 130 bytes; QR v6 to v8 at ECC M, depending on the file name):
 
 ```
 'QK' (2) · ver (1) · session (4) · key (32) · nonce (12) · K (2) · block size (2) ·
@@ -94,15 +92,15 @@ Starting values. The first session on real phones measures the receiver's decode
 | Merge PDFs | Expo Go, pure JS (`pdf-lib`). Also: pick several PDFs at once on the Send screen and they merge on the spot |
 | Compress (images) | Expo Go, OS codecs (`expo-image-manipulator`); Sharper 2048 px / q75, Smaller 1280 px / q60 |
 | Compress (PDF) | Expo Go. Re-encodes the images inside the PDF through the OS codecs (JPEG and raw Flate RGB/grey; masks, stencils, indexed and Decode-array images are left alone) and re-saves with object streams. Sharper 1800 px / q70, Smaller 1200 px / q55 |
+| PDF → Word, Word → PDF, Image → Word (OCR) | Need a development build with native modules |
 
 The Edit screen only lists operations that apply to the file's type; the ones this build cannot run are shown muted with the reason.
-| PDF → Word, Word → PDF, Image → Word (OCR) | need a development build with native modules; the screen says so |
 
 ## Status
 
 | Milestone | State |
 | --- | --- |
-| M1 Codec | done, 35 tests |
+| M1 Codec | done, 36 tests |
 | M2 Send and Receive | written, bundles, not yet run on a phone |
 | M3 Edit | three of six operations |
 | M4 Motion, dark mode | in; accessibility labels on controls, VoiceOver pass pending |

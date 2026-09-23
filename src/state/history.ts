@@ -8,7 +8,6 @@ export interface HistoryEntry {
   size: number;
   direction: "sent" | "received";
   at: number;
-  /** Where the received copy lives, while it still exists. */
   uri?: string;
   mime?: string;
   seconds?: number;

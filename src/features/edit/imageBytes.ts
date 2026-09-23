@@ -2,17 +2,10 @@ import { zlibSync } from 'fflate';
 
 import { crc32 } from '../../core/codec/crc32';
 
-/**
- * Two compression levels, shared by the image and PDF operations. "Sharp"
- * keeps a scanned A4 page readable at 150 dpi; "small" is for photos that
- * only need to look right on a phone.
- */
 export type CompressLevel = 'sharp' | 'small';
 
 export interface LevelSpec {
-  /** Longest edge after resizing, in pixels. */
   maxEdge: number;
-  /** JPEG quality, 0..1. */
   quality: number;
 }
 
@@ -30,12 +23,10 @@ export interface RecodedImage {
   bytes: Uint8Array;
   width: number;
   height: number;
-  /** Colour channels in the JPEG: 1 grey, 3 RGB, 4 CMYK. */
   components: number;
   resized: boolean;
 }
 
-/** Decodes an image file (bytes or a file URI) and writes a JPEG to `spec`. The app's one runs in the OS codecs. */
 export type Recoder = (source: Uint8Array | string, ext: string, spec: LevelSpec) => Promise<RecodedImage>;
 
 export interface JpegInfo {
@@ -44,7 +35,6 @@ export interface JpegInfo {
   components: number;
 }
 
-/** Reads the start-of-frame marker. Null when `b` is not a JPEG. */
 export function jpegInfo(b: Uint8Array): JpegInfo | null {
   if (b.length < 4 || b[0] !== 0xff || b[1] !== 0xd8) return null;
   let p = 2;
@@ -68,25 +58,19 @@ export function jpegInfo(b: Uint8Array): JpegInfo | null {
       if (p + 9 >= b.length) return null;
       return { height: (b[p + 5] << 8) | b[p + 6], width: (b[p + 7] << 8) | b[p + 8], components: b[p + 9] };
     }
-    if (marker === 0xda) return null; // scan data before any SOF: broken file
+    if (marker === 0xda) return null;
     p += 2 + len;
   }
   return null;
 }
 
-/**
- * Wraps PNG-filtered scanlines (one filter byte, then the row) into a PNG
- * file, so raw pixels pulled out of a PDF can go through the OS image
- * codecs. Deflate level 1: it only has to be valid, the JPEG that follows is
- * what gets kept.
- */
 export function pngFromScanlines(scanlines: Uint8Array, width: number, height: number, channels: 1 | 3): Uint8Array {
   const idat = zlibSync(scanlines, { level: 1 });
   const ihdr = new Uint8Array(13);
   writeU32(ihdr, 0, width);
   writeU32(ihdr, 4, height);
-  ihdr[8] = 8; // bit depth
-  ihdr[9] = channels === 1 ? 0 : 2; // greyscale or truecolour
+  ihdr[8] = 8;
+  ihdr[9] = channels === 1 ? 0 : 2;
   const chunks = [chunk('IHDR', ihdr), chunk('IDAT', idat), chunk('IEND', new Uint8Array(0))];
   const out = new Uint8Array(8 + chunks.reduce((n, c) => n + c.length, 0));
   out.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);

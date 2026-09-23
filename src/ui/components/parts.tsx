@@ -9,7 +9,6 @@ import { eyebrow, mono, sans } from '../type';
 export type PhaseTint = 'neutral' | 'amber' | 'green';
 const TINT_INDEX: Record<PhaseTint, number> = { neutral: 0, amber: 1, green: 2 };
 
-/** Big screen heading, 30 pt, tight. */
 export function BigTitle({ children, center = false, color, style }: { children: string; center?: boolean; color?: string; style?: StyleProp<TextStyle> }) {
   const c = usePalette();
   return (
@@ -29,7 +28,6 @@ export function Eyebrow({ children }: { children: string }) {
   return <Text style={eyebrow(c.muted)}>{children}</Text>;
 }
 
-/** Mono uppercase label above a value, for telemetry rows. */
 export function Tele({ label, value, onDark = false }: { label: string; value: string; onDark?: boolean }) {
   const c = usePalette();
   return (
@@ -42,7 +40,6 @@ export function Tele({ label, value, onDark = false }: { label: string; value: s
   );
 }
 
-/** One stat in a bordered cell. */
 export function StatCell({ label, value }: { label: string; value: string }) {
   const c = usePalette();
   return (
@@ -52,7 +49,6 @@ export function StatCell({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Small pill: amber for the key phase, green for locked data. Color changes ease over 180 ms. */
 export function PhaseTag({ text, tint = 'neutral' }: { text: string; tint?: PhaseTint }) {
   const c = usePalette();
   const t = useSharedValue(TINT_INDEX[tint]);
@@ -68,7 +64,6 @@ export function PhaseTag({ text, tint = 'neutral' }: { text: string; tint?: Phas
   );
 }
 
-/** Amber note box for the one thing the person must know before going on. */
 export function NoteBox({ children, tint = 'amber' }: { children: string; tint?: PhaseTint }) {
   const c = usePalette();
   const [bg, fg] = tint === 'amber' ? [c.keySoft, c.keyInk] : tint === 'green' ? [c.lockSoft, c.lockInk] : [c.paper3, c.text];
@@ -79,7 +74,6 @@ export function NoteBox({ children, tint = 'amber' }: { children: string; tint?:
   );
 }
 
-/** File name, size and type in a card. */
 export function FileCard({ name, meta, badge, trailing }: { name: string; meta: string; badge?: string; trailing?: React.ReactNode }) {
   const c = usePalette();
   return (
@@ -100,7 +94,6 @@ export function FileCard({ name, meta, badge, trailing }: { name: string; meta: 
   );
 }
 
-/** Label on the left, mono value on the right. */
 export function EstRow({ label, value }: { label: string; value: string }) {
   const c = usePalette();
   return (

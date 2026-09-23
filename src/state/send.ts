@@ -11,13 +11,7 @@ export type PickOutcome = 'picked' | 'merged' | 'cancelled' | 'error';
 
 interface SendState {
   file: PickedFile | null;
-  /** The file before the last edit, so Undo has something to go back to. */
   original: PickedFile | null;
-  /**
-   * The file squeezed losslessly (deflate) for the stream, or as-is when
-   * that saves nothing. Null while packing. Block counts and estimates use
-   * this, since it is what goes over the QR channel.
-   */
   packed: Packed | null;
   preset: PresetId;
   session: SenderSession | null;
@@ -26,9 +20,7 @@ interface SendState {
   setFile: (file: PickedFile, keepOriginal?: boolean) => void;
   undoEdit: () => void;
   setPreset: (preset: PresetId) => void;
-  /** Packs (if not done yet), seals the file and builds the encoder. Reused for the same file and preset. */
   prepare: (onProgress?: PrepareProgress) => Promise<SenderSession>;
-  /** Drops the session key. Called when the flow ends. */
   endSession: () => void;
   reset: () => void;
 }
@@ -37,12 +29,10 @@ let packGeneration = 0;
 let packPromise: Promise<Packed> | null = null;
 
 export const useSend = create<SendState>((set, get) => {
-  /** Starts packing `file` in the background; an older pack in flight is ignored when it lands. */
   const startPacking = (file: PickedFile) => {
     const generation = ++packGeneration;
     set({ packed: null });
     packPromise = packAsync(file.bytes)
-      // Packing is an optimisation: on any failure the file streams as it is.
       .catch((): Packed => ({ method: 'none', bytes: file.bytes, rawSize: file.bytes.length }))
       .then((packed) => {
         if (generation === packGeneration) set({ packed });
@@ -117,7 +107,6 @@ export const useSend = create<SendState>((set, get) => {
       onProgress?.('packing', 0);
       const packed = s.packed ?? (await (packPromise ?? packAsync(file.bytes)));
       const session = await SenderSession.create(file, presetById(get().preset), onProgress, packed);
-      // The file may have changed while we were working; only keep a session for the current one.
       if (get().file === file) set({ session });
       return session;
     },
@@ -132,7 +121,6 @@ export const useSend = create<SendState>((set, get) => {
   };
 });
 
-/** Bytes that go over the QR channel for the current file: packed when known, raw until then. */
 export function streamBytes(s: Pick<SendState, 'file' | 'packed'>): number {
   return s.packed?.bytes.length ?? s.file?.bytes.length ?? 0;
 }
