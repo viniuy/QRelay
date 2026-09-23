@@ -24,7 +24,11 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.qrelay.app"
+      "package": "com.qrelay.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.CAMERA"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -55,6 +59,20 @@
     },
     "runtimeVersion": {
       "policy": "appVersion"
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2ccbbd7b-d21f-441e-a67c-6865191d7adc"
+      }
+    },
+    "owner": "dev_beans",
+    "updates": {
+      "url": "https://u.expo.dev/2ccbbd7b-d21f-441e-a67c-6865191d7adc"
+    },
+    "platforms": [
+      "ios",
+      "android"
+    ]
   }
 }

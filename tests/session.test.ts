@@ -134,4 +134,16 @@ describe('sender to receiver', () => {
     const key = SenderSession.createSync({ bytes: randomData(100, 8), name: 'offer-letter.pdf', mime: 'application/pdf' }, presetById('balanced'));
     expect(renderMatrix(key.keyText).version).toBe(8);
   });
+
+  it('pins one QR version for a whole stream, so the symbol never changes size', () => {
+    // Left to choose, the encoder packs digit runs into numeric mode and the
+    // version wanders with the ciphertext, resizing the symbol every frame.
+    const bytes = Uint8Array.from({ length: 60000 }, (_, i) => (i * 2654435761) & 255);
+    for (const preset of PRESETS) {
+      const s = SenderSession.createSync({ name: 'x.bin', mime: 'application/octet-stream', bytes }, preset);
+      const sizes = new Set<number>();
+      for (let seed = 0; seed < 60; seed++) sizes.add(renderMatrix(s.frameText(seed), preset.qrVersion).size);
+      expect([...sizes]).toEqual([17 + 4 * preset.qrVersion]);
+    }
+  });
 });

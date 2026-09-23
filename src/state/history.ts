@@ -1,12 +1,12 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 export interface HistoryEntry {
   id: string;
   name: string;
   size: number;
-  direction: 'sent' | 'received';
+  direction: "sent" | "received";
   at: number;
   /** Where the received copy lives, while it still exists. */
   uri?: string;
@@ -16,7 +16,7 @@ export interface HistoryEntry {
 
 interface HistoryState {
   entries: HistoryEntry[];
-  add: (entry: Omit<HistoryEntry, 'id'>) => void;
+  add: (entry: Omit<HistoryEntry, "id">) => void;
   remove: (id: string) => void;
 }
 
@@ -26,10 +26,17 @@ export const useHistory = create<HistoryState>()(
       entries: [],
       add: (entry) =>
         set((s) => ({
-          entries: [{ ...entry, id: `${entry.at}-${Math.random().toString(36).slice(2, 8)}` }, ...s.entries].slice(0, 50),
+          entries: [
+            {
+              ...entry,
+              id: `${entry.at}-${Math.random().toString(36).slice(2, 8)}`,
+            },
+            ...s.entries,
+          ].slice(0, 50),
         })),
-      remove: (id) => set((s) => ({ entries: s.entries.filter((e) => e.id !== id) })),
+      remove: (id) =>
+        set((s) => ({ entries: s.entries.filter((e) => e.id !== id) })),
     }),
-    { name: 'qrelay.history', storage: createJSONStorage(() => AsyncStorage) },
+    { name: "qrelay.history", storage: createJSONStorage(() => AsyncStorage) },
   ),
 );

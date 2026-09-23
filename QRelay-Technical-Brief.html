@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="QRelay technical brief: React Native, fountain codes, cryptography and the QR channel.">
+<style>:root{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>QRelay Technical Brief</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --paper:#F3F4F0;--paper-2:#FFFFFF;--paper-3:#E8EBE4;--paper-4:#DCE0D8;
+  --ink:#131614;--text:#131614;--muted:#616B65;--faint:#98A29B;
+  --line:#D5D9D1;--line-2:#BCC3BA;
+  --key:#E39A00;--key-ink:#8A5C00;--key-soft:#FFF0CF;
+  --lock:#159A5C;--lock-ink:#0A5E37;--lock-soft:#D8F3E3;
+  --danger:#B8341F;--danger-soft:#FBE4E0;
+  --sans:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --shadow:0 1px 2px rgba(19,22,20,.05),0 12px 28px -18px rgba(19,22,20,.3);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#0F1210;--paper-2:#171B18;--paper-3:#1F2521;--paper-4:#2A312C;
+    --ink:#F1F3EE;--text:#EDF0EA;--muted:#9BA59E;--faint:#66706A;
+    --line:#2A312C;--line-2:#3D463F;
+    --key:#FFB92E;--key-ink:#FFCD62;--key-soft:#3A2905;
+    --lock:#37CF87;--lock-ink:#7FE7B6;--lock-soft:#0E3423;
+    --danger:#F06A57;--danger-soft:#3A1710;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 28px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0F1210;--paper-2:#171B18;--paper-3:#1F2521;--paper-4:#2A312C;
+  --ink:#F1F3EE;--text:#EDF0EA;--muted:#9BA59E;--faint:#66706A;
+  --line:#2A312C;--line-2:#3D463F;
+  --key:#FFB92E;--key-ink:#FFCD62;--key-soft:#3A2905;
+  --lock:#37CF87;--lock-ink:#7FE7B6;--lock-soft:#0E3423;
+  --danger:#F06A57;--danger-soft:#3A1710;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 28px -18px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--text);font-family:var(--sans);font-size:16.5px;line-height:1.55;font-optical-sizing:auto;overflow-x:hidden}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:clamp(16px,4vw,44px);padding-block:0 110px}
+h1,h2,h3,h4{margin:0;text-wrap:balance;letter-spacing:-.015em;font-weight:600}
+p{margin:0}
+a{color:inherit}
+code{font-family:var(--mono);font-size:.875em;background:var(--paper-3);padding:1.5px 5px;border-radius:4px;overflow-wrap:break-word}
+b,strong{font-weight:600}
+em{font-style:normal;font-weight:600}
+
+/* ---- nav ---- */
+.nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);margin-bottom:0}
+.nav-in{max-width:1180px;margin:0 auto;padding-inline:clamp(16px,4vw,44px);display:flex;align-items:center;gap:14px;height:56px}
+.nav .brand{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:-.02em;flex:none}
+.nav .brand svg{width:24px;height:24px}
+.nav ul{display:flex;gap:2px;list-style:none;margin:0;padding:0;overflow-x:auto;scrollbar-width:none}
+.nav ul::-webkit-scrollbar{display:none}
+.nav a{font-family:var(--mono);font-size:11.5px;text-decoration:none;color:var(--muted);padding:6px 9px;border-radius:7px;white-space:nowrap;transition:background .15s,color .15s}
+.nav a:hover{color:var(--text);background:var(--paper-3)}
+
+/* ---- hero ---- */
+.hero{padding-block:clamp(36px,6vw,64px) 30px;border-bottom:1px solid var(--line)}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(34px,6vw,60px);line-height:1.02;letter-spacing:-.03em;font-weight:600;margin-block:14px 18px;max-width:17ch}
+.standfirst{font-size:clamp(17px,2vw,20px);line-height:1.5;color:var(--muted);max-width:62ch}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:28px}
+.facts div{background:var(--paper-2);padding:13px 15px}
+.facts dt{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 0 3px}
+.facts dd{margin:0;font-family:var(--mono);font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.facts dd span{font-size:12px;color:var(--muted);font-weight:400}
+
+/* ---- sections ---- */
+section{padding-block:clamp(40px,5vw,60px);border-bottom:1px solid var(--line);scroll-margin-top:66px}
+section:last-of-type{border-bottom:0}
+.shead{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+.snum{font-family:var(--mono);font-size:12px;color:var(--key-ink);background:var(--key-soft);padding:3px 8px;border-radius:5px;flex:none;font-weight:500}
+h2{font-size:clamp(25px,3.4vw,36px);line-height:1.1;letter-spacing:-.025em}
+.lede{font-size:17.5px;color:var(--muted);max-width:66ch;margin-top:12px;line-height:1.55}
+h3{font-size:19px;margin-top:34px;margin-bottom:10px;line-height:1.25}
+h4{font-size:15.5px;margin-top:22px;margin-bottom:6px;font-weight:600}
+.prose{max-width:70ch}
+.prose p+p{margin-top:13px}
+section>p,section>.prose{max-width:70ch}
+ul.plain,ol.plain{margin:12px 0 0;padding-left:20px;display:grid;gap:8px;max-width:68ch}
+ul.plain li::marker{color:var(--faint)}
+ol.plain li::marker{font-family:var(--mono);font-size:.85em;color:var(--muted)}
+
+/* ---- callouts ---- */
+.say{border-left:3px solid var(--key);background:var(--key-soft);padding:14px 16px;border-radius:0 10px 10px 0;margin-top:20px;max-width:70ch}
+.say .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--key-ink);display:block;margin-bottom:5px}
+.say p{color:var(--key-ink);font-size:16px;line-height:1.5}
+.note{border:1px solid var(--line-2);background:var(--paper-2);padding:14px 16px;border-radius:10px;margin-top:20px;max-width:70ch;font-size:15.5px;color:var(--muted)}
+.note b{color:var(--text)}
+.warn{border-left:3px solid var(--danger);background:var(--danger-soft);padding:14px 16px;border-radius:0 10px 10px 0;margin-top:20px;max-width:70ch;font-size:15.5px}
+
+/* ---- tables ---- */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:18px}
+table{border-collapse:collapse;font-size:14.5px;width:100%;min-width:520px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;padding:9px 16px 9px 0;border-bottom:1px solid var(--line-2);white-space:nowrap;vertical-align:bottom}
+td{padding:11px 16px 11px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{font-weight:600}
+.num,td.num,th.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+.cap{font-size:13.5px;color:var(--muted);margin-top:10px;max-width:70ch}
+
+/* ---- code ---- */
+pre{margin:18px 0 0;font-family:var(--mono);font-size:12.8px;line-height:1.65;background:var(--paper-2);border:1px solid var(--line);border-radius:11px;padding:15px 17px;overflow-x:auto;color:var(--text)}
+pre i{font-style:normal;color:var(--muted)}
+pre b{font-weight:500;color:var(--key-ink)}
+pre .g{color:var(--lock-ink);font-weight:500}
+
+/* ---- byte layout ---- */
+.bytes{display:flex;gap:3px;font-family:var(--mono);font-size:11px;min-width:640px}
+.bytes>div{background:var(--paper-3);border:1px solid var(--line);padding:7px 7px;border-radius:5px;min-width:0;overflow:hidden}
+.bytes b{display:block;font-weight:600;font-size:11.5px;white-space:nowrap;color:var(--text)}
+.bytes span{color:var(--muted);white-space:nowrap;font-size:10.5px}
+.bytes .k{background:var(--key-soft);border-color:var(--key)}
+.bytes .k b,.bytes .k span{color:var(--key-ink)}
+.bytes .p{background:var(--lock-soft);border-color:var(--lock)}
+.bytes .p b,.bytes .p span{color:var(--lock-ink)}
+
+/* ---- diagrams ---- */
+figure{margin:24px 0 0}
+figure svg{display:block;width:100%;height:auto;max-width:100%}
+figcaption{font-size:13.5px;color:var(--muted);margin-top:10px;max-width:70ch}
+.dg-box{fill:var(--paper-2);stroke:var(--line-2)}
+.dg-fill{fill:var(--paper-3);stroke:var(--line-2)}
+.dg-key{fill:var(--key-soft);stroke:var(--key)}
+.dg-lock{fill:var(--lock-soft);stroke:var(--lock)}
+.dg-ink{fill:var(--ink)}
+.dg-t{fill:var(--text);font-family:var(--sans);font-size:12.5px;font-weight:500}
+.dg-m{fill:var(--muted);font-family:var(--mono);font-size:10.5px}
+.dg-mk{fill:var(--key-ink);font-family:var(--mono);font-size:10.5px}
+.dg-ml{fill:var(--lock-ink);font-family:var(--mono);font-size:10.5px}
+.dg-tp{fill:var(--paper);font-family:var(--sans);font-size:12.5px;font-weight:500}
+.dg-line{stroke:var(--line-2);fill:none}
+.dg-arrow{stroke:var(--faint);fill:none;stroke-width:1.5}
+
+/* ---- layered cards ---- */
+.layers{display:grid;gap:8px;margin-top:20px}
+.layer{display:grid;grid-template-columns:132px 1fr;gap:16px;padding:14px 16px;border:1px solid var(--line);border-radius:11px;background:var(--paper-2);align-items:start}
+.layer .lname{font-family:var(--mono);font-size:12px;color:var(--key-ink);font-weight:500}
+.layer .ldesc{font-size:14.5px;color:var(--muted)}
+.layer .ldesc b{color:var(--text)}
+@media (max-width:620px){.layer{grid-template-columns:1fr;gap:4px}}
+
+/* ---- q&a ---- */
+.qa{display:grid;gap:10px;margin-top:22px}
+details{border:1px solid var(--line);border-radius:11px;background:var(--paper-2);overflow:hidden}
+details[open]{border-color:var(--line-2);box-shadow:var(--shadow)}
+summary{padding:14px 16px;cursor:pointer;font-weight:600;font-size:15.5px;list-style:none;display:flex;gap:11px;align-items:flex-start;transition:background .15s}
+summary::-webkit-details-marker{display:none}
+summary:hover{background:var(--paper-3)}
+summary::before{content:"?";font-family:var(--mono);font-size:12px;color:var(--key-ink);background:var(--key-soft);width:20px;height:20px;border-radius:5px;display:grid;place-items:center;flex:none;margin-top:1px}
+details[open] summary{border-bottom:1px solid var(--line)}
+.ans{padding:14px 16px 16px 47px;font-size:15.5px;color:var(--muted);line-height:1.55}
+.ans p+p{margin-top:11px}
+.ans b{color:var(--text)}
+@media (max-width:620px){.ans{padding-left:16px}}
+
+/* ---- steps / timeline ---- */
+.tl{list-style:none;margin:22px 0 0;padding:0;display:grid}
+.tl li{display:grid;grid-template-columns:86px 1fr;gap:18px;padding:16px 0;border-top:1px solid var(--line)}
+.tl li:last-child{border-bottom:1px solid var(--line)}
+.tl .t{font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:2px;font-variant-numeric:tabular-nums}
+.tl h4{margin:0 0 4px}
+.tl p{font-size:14.8px;color:var(--muted);max-width:62ch}
+.tl code{font-size:12.5px}
+@media (max-width:620px){.tl li{grid-template-columns:1fr;gap:3px}}
+
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:999px;vertical-align:middle;margin-left:6px;letter-spacing:.02em}
+.pill.k{background:var(--key-soft);color:var(--key-ink)}
+.pill.g{background:var(--lock-soft);color:var(--lock-ink)}
+.pill.n{background:var(--paper-3);color:var(--muted)}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:20px}
+@media (max-width:760px){.two{grid-template-columns:1fr}}
+.two>div>h4:first-child{margin-top:0}
+
+hr.soft{border:0;border-top:1px solid var(--line);margin:32px 0 0}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition-duration:.01ms!important}}
+</style>
+
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-in">
+    <span class="brand">
+      <svg viewBox="0 0 34 34" fill="none" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="8" fill="var(--ink)"/><rect x="7" y="7" width="8" height="8" rx="1.5" stroke="var(--paper)" stroke-width="2"/><rect x="19" y="7" width="8" height="8" rx="1.5" stroke="var(--paper)" stroke-width="2"/><rect x="7" y="19" width="8" height="8" rx="1.5" stroke="var(--paper)" stroke-width="2"/><path d="M19.5 26.5 27 19M21.5 19H27v5.5" stroke="var(--key)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      QRelay
+    </span>
+    <ul>
+      <li><a href="#idea">Idea</a></li>
+      <li><a href="#rn">React Native</a></li>
+      <li><a href="#phone">On the phone</a></li>
+      <li><a href="#stack">Stack</a></li>
+      <li><a href="#protocol">Protocol</a></li>
+      <li><a href="#fountain">Fountain</a></li>
+      <li><a href="#crypto">Crypto</a></li>
+      <li><a href="#qr">QR</a></li>
+      <li><a href="#render">Rendering</a></li>
+      <li><a href="#walk">Walkthrough</a></li>
+      <li><a href="#numbers">Numbers</a></li>
+      <li><a href="#tests">Tests</a></li>
+      <li><a href="#limits">Limits</a></li>
+      <li><a href="#qa">Q&amp;A</a></li>
+      <li><a href="#demo">Demo</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header class="hero">
+  <span class="kicker">Technical brief · 23 September 2026</span>
+  <h1>A file crosses the room as light.</h1>
+  <p class="standfirst">QRelay sends a file from one phone to another using nothing but a screen and a camera. No Wi‑Fi, no Bluetooth, no server, no account. The sender encrypts the file and plays it as a stream of QR codes; the receiver films the screen and rebuilds it. This is everything under the hood, in the order you would explain it.</p>
+  <dl class="facts">
+    <div><dt>Source</dt><dd>5,655 <span>lines TS</span></dd></div>
+    <div><dt>Tests</dt><dd>36 <span>passing</span></dd></div>
+    <div><dt>Bundle</dt><dd>5.0 <span>MB Hermes</span></dd></div>
+    <div><dt>Modules</dt><dd>2,020 <span>bundled</span></dd></div>
+    <div><dt>Channel</dt><dd>4.9 <span>KB/s</span></dd></div>
+    <div><dt>Crypto</dt><dd>AES-256 <span>GCM</span></dd></div>
+  </dl>
+</header>
+
+<section id="idea">
+  <div class="shead"><span class="snum">01</span><h2>The idea, in ninety seconds</h2></div>
+  <p class="lede">Start here. If the audience only remembers one slide, make it this one.</p>
+
+  <div class="prose">
+    <p>Every way two phones normally exchange a file goes through something in the middle: a Wi‑Fi router, a cell tower, a Bluetooth pairing, a cloud drive. Each middle party is a place the file can be logged, blocked, or intercepted, and each one needs setup: a password, a pairing dialog, an account.</p>
+    <p>A screen and a camera are already a communication channel. A screen is a transmitter of about two million pixels; a camera is a receiver that reads them thirty times a second. It is line-of-sight, it is one-directional, and you can see it working with your own eyes. Nobody can join it from the next room.</p>
+    <p>QRelay treats that as a real network link and builds a protocol on top of it, the way you would over radio: encrypt the payload, cut it into numbered blocks, transmit them as fast as the channel allows, and make the transfer survive the fact that the camera <em>will</em> miss frames.</p>
+  </div>
+
+  <div class="say">
+    <span class="tag">Say it like this</span>
+    <p>"Everything on your phone that sends a file needs a network. This needs a window. The screen is the radio, the camera is the antenna, and the QR codes are the modulation."</p>
+  </div>
+
+  <h3>The three problems that make it interesting</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Problem</th><th>Why it is hard</th><th>The answer in QRelay</th></tr></thead>
+    <tbody>
+      <tr><td>The channel is tiny</td><td>One QR code holds a few hundred bytes, and a camera reads about ten a second. That is roughly 5 KB per second, about 40,000 times slower than Wi‑Fi.</td><td>Compress before encrypting, pick a frame size the camera can actually read, and be honest in the UI about how long it will take.</td></tr>
+      <tr><td>There is no way to say "resend"</td><td>The camera cannot talk back to the screen. A dropped frame is gone, and classic protocols like TCP are built entirely around asking for retransmission.</td><td><em>Fountain codes.</em> The sender emits an endless stream of frames, any sufficient subset of which rebuilds the file.</td></tr>
+      <tr><td>Anyone can point a camera</td><td>A screen is public. A second camera in the room reads exactly the same light.</td><td>Encrypt with AES-256-GCM and show the key in a separate QR, once, for three seconds. Whoever missed it gets only ciphertext.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="rn">
+  <div class="shead"><span class="snum">02</span><h2>What React Native actually is</h2></div>
+  <p class="lede">The question you will definitely be asked. The short answer: it is not a website in a wrapper, and it is not a compiler to Swift.</p>
+
+  <div class="prose">
+    <p>An ordinary iOS app is Swift compiled to machine code. An ordinary Android app is Kotlin compiled to bytecode for the Android runtime. React Native is a third path: <em>you write JavaScript, and it drives the real native UI toolkit.</em></p>
+    <p>The distinction that matters: a button in QRelay is not an HTML <code>&lt;button&gt;</code> and not a picture of a button. It is a genuine <code>UIView</code> on iOS and a genuine <code>android.view.View</code> on Android, created and positioned by native code, taking touches from the real touch system. JavaScript decides <em>what</em> should exist; the platform decides how to draw it.</p>
+    <p>That is the difference from a hybrid framework like Cordova or a plain web app, where the entire interface is a web page inside a browser view. It is also the difference from Flutter, which brings its own rendering engine and paints every pixel itself. React Native borrows the platform's own widgets.</p>
+  </div>
+
+  <div class="scroll"><table>
+    <thead><tr><th>Approach</th><th>What runs your logic</th><th>What draws the pixels</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td>Native</td><td>Compiled Swift / Kotlin</td><td>Platform UI toolkit</td><td>Instagram's original apps</td></tr>
+      <tr><td>Web wrapper</td><td>JavaScript in a browser view</td><td>The browser engine</td><td>Cordova, Ionic</td></tr>
+      <tr><td>Flutter</td><td>Compiled Dart</td><td>Its own engine (Impeller/Skia)</td><td>Google Pay</td></tr>
+      <tr><td>React Native <span class="pill g">this app</span></td><td>JavaScript on Hermes</td><td>Platform UI toolkit</td><td>QRelay, Discord, Shopify</td></tr>
+    </tbody>
+  </table></div>
+  <p class="cap">QRelay was originally written in Flutter and rewritten in React Native. The reason was practical rather than technical: building a Flutter app for an iPhone requires a Mac, and Expo lets an iPhone run the app straight from a Windows PC. The protocol survived the move unchanged, which is itself a point worth making: the interesting part of this project is not the framework.</p>
+
+  <h3>And what is Expo?</h3>
+  <div class="prose">
+    <p>React Native gives you the bridge to native UI, but not a camera, not a file picker, not haptics. Expo is the layer above: a curated set of native modules with one consistent JavaScript API, plus the tooling to build and ship without touching Xcode or Android Studio.</p>
+    <p>Two pieces of Expo matter for the demo:</p>
+  </div>
+  <ul class="plain">
+    <li><b>Expo Go</b> — a free app on the App Store that is, in effect, a pre-built React Native host containing every Expo native module. It downloads <em>your</em> JavaScript bundle and runs it. That is why an iPhone can run this app with no Mac, no Apple developer account and no code signing: the signed native shell is Expo's, and only the JavaScript is yours.</li>
+    <li><b>EAS Build</b> — when you need native code Expo Go does not carry, or a real home-screen icon, Expo compiles the app on their machines (including Macs) and hands back an installable binary.</li>
+  </ul>
+
+  <div class="note"><b>The tradeoff, stated honestly:</b> Expo Go can only run native modules it already contains. Three of QRelay's six edit operations (PDF↔Word conversion and OCR) need engines Expo Go does not ship, so the app detects that and greys those tiles out with a reason rather than failing when tapped.</div>
+</section>
+
+<section id="phone">
+  <div class="shead"><span class="snum">03</span><h2>How the phone actually runs it</h2></div>
+  <p class="lede">From tapping the icon to pixels on glass. This is the part that separates a demo from an explanation.</p>
+
+  <h3>The JavaScript engine</h3>
+  <div class="prose">
+    <p>Your code does not run in Safari or Chrome. It runs on <b>Hermes</b>, a JavaScript engine Meta wrote specifically for mobile. Its defining choice: instead of parsing JavaScript source at launch, Hermes compiles your code <em>ahead of time</em> into compact bytecode, and the app ships that bytecode.</p>
+    <p>You can see it in this project. <code>npx expo export</code> produces a single <code>.hbc</code> file — Hermes bytecode — of about 5 MB, holding all 2,020 modules of app code plus every library. At launch the engine memory-maps that file and starts executing almost immediately, with no parse step. That is why a React Native app can cold-start in well under a second despite being "a JavaScript app".</p>
+  </div>
+
+  <h3>Three threads, and why it matters here</h3>
+  <div class="prose">
+    <p>A React Native app runs on several threads at once. Three of them decide whether QRelay feels smooth or terrible:</p>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 900 310" role="img" aria-label="Diagram of the JavaScript thread, UI thread and native modules, and what QRelay runs on each">
+      <rect x="1" y="1" width="284" height="150" rx="12" class="dg-box" stroke-width="1.5"/>
+      <text x="20" y="30" class="dg-t">JavaScript thread</text>
+      <text x="20" y="50" class="dg-m">Hermes · your code</text>
+      <line x1="20" y1="64" x2="265" y2="64" class="dg-line" stroke-width="1"/>
+      <text x="20" y="86" class="dg-m">· React components, state</text>
+      <text x="20" y="104" class="dg-m">· the fountain codec</text>
+      <text x="20" y="122" class="dg-m">· QR encoding, AES-GCM</text>
+      <text x="20" y="140" class="dg-m">· one frame every 100 ms</text>
+
+      <rect x="308" y="1" width="284" height="150" rx="12" class="dg-lock" stroke-width="1.5"/>
+      <text x="327" y="30" class="dg-t">UI thread</text>
+      <text x="327" y="50" class="dg-ml">native · 60–120 fps</text>
+      <line x1="327" y1="64" x2="572" y2="64" class="dg-line" stroke-width="1"/>
+      <text x="327" y="86" class="dg-ml">· draws every view</text>
+      <text x="327" y="104" class="dg-ml">· handles touches</text>
+      <text x="327" y="122" class="dg-ml">· runs Reanimated springs</text>
+      <text x="327" y="140" class="dg-ml">· the key countdown ring</text>
+
+      <rect x="615" y="1" width="284" height="150" rx="12" class="dg-key" stroke-width="1.5"/>
+      <text x="634" y="30" class="dg-t">Native modules</text>
+      <text x="634" y="50" class="dg-mk">own threads</text>
+      <line x1="634" y1="64" x2="879" y2="64" class="dg-line" stroke-width="1"/>
+      <text x="634" y="86" class="dg-mk">· camera capture</text>
+      <text x="634" y="104" class="dg-mk">· QR detection (Vision)</text>
+      <text x="634" y="122" class="dg-mk">· SHA-256, secure random</text>
+      <text x="634" y="140" class="dg-mk">· file system, brightness</text>
+
+      <path d="M285 60 h23" class="dg-arrow" marker-end="url(#ar)"/>
+      <path d="M592 60 h23" class="dg-arrow" marker-end="url(#ar)"/>
+      <path d="M615 110 h-23" class="dg-arrow" marker-end="url(#ar)"/>
+      <defs><marker id="ar" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 z" fill="var(--faint)"/></marker></defs>
+
+      <rect x="1" y="186" width="898" height="118" rx="12" class="dg-fill" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="22" y="212" class="dg-t">Why the split matters in this app</text>
+      <text x="22" y="238" class="dg-m">The camera decodes a QR on its own thread and hands JavaScript a string. JavaScript XORs it into the linear system.</text>
+      <text x="22" y="258" class="dg-m">If that work blocked the UI thread, the viewfinder would freeze and the animations would stutter. It does not: they are</text>
+      <text x="22" y="278" class="dg-m">separate threads. The block grid still pops, the pill still pulses, while the decoder grinds through a 2,000-block file.</text>
+    </svg>
+    <figcaption>The three threads and what QRelay puts on each. Animations were deliberately written so that they never need the JavaScript thread while a transfer is running.</figcaption>
+  </figure>
+
+  <h3>The New Architecture</h3>
+  <div class="prose">
+    <p>Older React Native sent every instruction between JavaScript and native as a serialised JSON message over an asynchronous "bridge". It worked, but it was a bottleneck and it made anything synchronous impossible.</p>
+    <p>React Native 0.76 made the <b>New Architecture</b> the default, and this project runs 0.86. JavaScript now holds direct references to native objects through JSI (the JavaScript Interface), so calling a native module is a direct function call rather than a serialised round trip. The renderer, <b>Fabric</b>, builds the view tree in C++ shared across platforms.</p>
+    <p>For QRelay this is not a footnote. The camera passes decoded QR strings to JavaScript many times per second, and the stream screen replaces an SVG path ten times per second. On the old bridge, both of those would be queued serialisations.</p>
+  </div>
+
+  <div class="say">
+    <span class="tag">If someone asks "isn't JavaScript slow?"</span>
+    <p>"For this app the bottleneck is physics, not the language. The camera can only read about ten QR codes a second. Our decoder handles a frame in well under a millisecond, so we spend 99% of every frame waiting for light. The one place JavaScript was genuinely too slow — hashing a multi-megabyte file — we handed to the operating system."</p>
+  </div>
+
+  <h3>Where we deliberately left JavaScript</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Job</th><th>Runs where</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td>Fountain encode / decode</td><td>JavaScript</td><td>Pure integer and XOR work on typed arrays; Hermes handles it in microseconds per frame.</td></tr>
+      <tr><td>AES-256-GCM</td><td>JavaScript (<code>@noble/ciphers</code>)</td><td>An audited constant-time implementation; fast enough at the 20 MB ceiling and identical on both platforms.</td></tr>
+      <tr><td>SHA-256 of the whole file</td><td><em>Native</em> (<code>expo-crypto</code>)</td><td>This one was measurably too slow in JavaScript on large files — seconds versus milliseconds.</td></tr>
+      <tr><td>Secure random (key, nonce)</td><td><em>Native</em></td><td>Hermes has no <code>crypto</code> global at all. A real CSPRNG must come from the OS.</td></tr>
+      <tr><td>QR detection</td><td><em>Native</em> (Vision / ML Kit)</td><td>Hardware-accelerated computer vision; nobody should reimplement this.</td></tr>
+      <tr><td>Image re-encoding</td><td><em>Native</em></td><td>The OS JPEG encoder is hardware-backed and already on the phone.</td></tr>
+      <tr><td>Every animation</td><td><em>UI thread</em> (Reanimated worklets)</td><td>So that a busy JavaScript thread can never cause a dropped frame.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note"><b>A real bug this caused.</b> The first build crashed at "Show the key" with no visible error. The cause: <code>crypto.getRandomValues</code> exists in every browser and in Node, so the key generator assumed it. Hermes has no such global. The fix was to inject the OS generator at startup — and the reason it was silent was a <em>second</em> bug, where two animations assigned to the same value cancelled each other and the error toast never appeared. Two bugs, one symptom.</div>
+</section>
+<section id="stack">
+  <div class="shead"><span class="snum">04</span><h2>The stack, layer by layer</h2></div>
+  <p class="lede">Fifty-three TypeScript files in five layers. The rule that shaped all of it: the protocol must not know it is in a phone app.</p>
+
+  <div class="layers">
+    <div class="layer"><span class="lname">src/core</span><span class="ldesc"><b>The protocol.</b> base45, CRC-32, deflate packing, the block selector, the fountain encoder and decoder, AES-GCM, QR matrix generation, and the sender and receiver state machines. <b>Zero React and zero Expo imports.</b> These same files run inside the app and inside the test runner on a PC, unmodified.</span></div>
+    <div class="layer"><span class="lname">src/state</span><span class="ldesc"><b>Four Zustand stores.</b> <code>settings</code> and <code>history</code> persist to the phone's key-value store; <code>send</code> and <code>receive</code> hold the live transfer. Zustand was chosen over Redux because a store is a plain function and no provider has to wrap the tree.</span></div>
+    <div class="layer"><span class="lname">src/files</span><span class="ldesc"><b>The world outside.</b> Picking a file, saving one, sharing, opening in another app. All the platform differences live here — Android gets a real "open with" intent, iOS routes through the share sheet.</span></div>
+    <div class="layer"><span class="lname">src/ui</span><span class="ldesc"><b>The design system.</b> Colour tokens for both themes, two type scales, one spring shared by every control, the icon set, and twelve components. No component in <code>src/app</code> writes a raw colour or font size.</span></div>
+    <div class="layer"><span class="lname">src/app</span><span class="ldesc"><b>The screens.</b> Ten files, and the folder structure <em>is</em> the navigation: <code>send/key.tsx</code> is the route <code>/send/key</code>. This is Expo Router's file-based routing, the same idea as Next.js.</span></div>
+  </div>
+
+  <div class="note"><b>Why the separation earns its keep:</b> the fountain codec has 36 tests that run in about a second on a laptop, with no phone, no emulator and no camera. A protocol bug is found in a unit test, not by squinting at two phones. It also meant the entire Flutter-to-React-Native rewrite was a port of the UI layer; the protocol was translated line for line and its tests came with it.</div>
+
+  <h3>The dependency list, and why each one is there</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Package</th><th class="num">Version</th><th>Job</th></tr></thead>
+    <tbody>
+      <tr><td>expo</td><td class="num">57.0.24</td><td>SDK, native module set, build tooling</td></tr>
+      <tr><td>react-native</td><td class="num">0.86.3</td><td>The framework itself</td></tr>
+      <tr><td>react</td><td class="num">19.2.3</td><td>Component model and state</td></tr>
+      <tr><td>expo-router</td><td class="num">57.0.22</td><td>File-based navigation on native stacks</td></tr>
+      <tr><td>react-native-reanimated</td><td class="num">4.5.1</td><td>Animations that run on the UI thread</td></tr>
+      <tr><td>react-native-svg</td><td class="num">15.15.4</td><td>Draws each QR frame as a single vector path</td></tr>
+      <tr><td>expo-camera</td><td class="num">57.0.5</td><td>Viewfinder plus hardware QR detection</td></tr>
+      <tr><td>@noble/ciphers</td><td class="num">2.4.0</td><td>AES-256-GCM, audited, constant time</td></tr>
+      <tr><td>@noble/hashes</td><td class="num">2.4.0</td><td>SHA-256 for the tests; the app uses the OS</td></tr>
+      <tr><td>qrcode</td><td class="num">1.5.4</td><td>Turns a string into a module matrix</td></tr>
+      <tr><td>fflate</td><td class="num">0.8.3</td><td>Deflate, to shrink the file before encryption</td></tr>
+      <tr><td>pdf-lib</td><td class="num">1.17.1</td><td>Merging and rebuilding PDFs in pure JavaScript</td></tr>
+      <tr><td>zustand</td><td class="num">5.0.15</td><td>State stores</td></tr>
+    </tbody>
+  </table></div>
+  <p class="cap">Deliberately absent: no analytics, no crash reporter, no ad SDK, no HTTP client. The app makes no network requests at all once its bundle has loaded, which is a claim worth making out loud when the subject is privacy.</p>
+</section>
+
+<section id="protocol">
+  <div class="shead"><span class="snum">05</span><h2>The protocol</h2></div>
+  <p class="lede">What a file goes through between "Send" and light leaving the screen. Six stages, each with a reason.</p>
+
+  <figure>
+    <svg viewBox="0 0 900 132" role="img" aria-label="Pipeline: file, deflate, AES-GCM encrypt, split into blocks, fountain frames, base45, QR, screen">
+      <g>
+        <rect x="0" y="34" width="96" height="44" rx="9" class="dg-box" stroke-width="1.5"/><text x="48" y="56" class="dg-t" text-anchor="middle">file</text><text x="48" y="70" class="dg-m" text-anchor="middle">23.4 KB</text>
+        <path d="M100 56 h20" class="dg-arrow" marker-end="url(#ar2)"/>
+        <rect x="124" y="34" width="104" height="44" rx="9" class="dg-fill" stroke-width="1.5"/><text x="176" y="56" class="dg-t" text-anchor="middle">deflate</text><text x="176" y="70" class="dg-m" text-anchor="middle">if it helps</text>
+        <path d="M232 56 h20" class="dg-arrow" marker-end="url(#ar2)"/>
+        <rect x="256" y="34" width="118" height="44" rx="9" class="dg-key" stroke-width="1.5"/><text x="315" y="56" class="dg-t" text-anchor="middle">AES-256-GCM</text><text x="315" y="70" class="dg-mk" text-anchor="middle">+16 B tag</text>
+        <path d="M378 56 h20" class="dg-arrow" marker-end="url(#ar2)"/>
+        <rect x="402" y="34" width="104" height="44" rx="9" class="dg-box" stroke-width="1.5"/><text x="454" y="56" class="dg-t" text-anchor="middle">48 blocks</text><text x="454" y="70" class="dg-m" text-anchor="middle">500 B each</text>
+        <path d="M510 56 h20" class="dg-arrow" marker-end="url(#ar2)"/>
+        <rect x="534" y="34" width="112" height="44" rx="9" class="dg-lock" stroke-width="1.5"/><text x="590" y="56" class="dg-t" text-anchor="middle">frames</text><text x="590" y="70" class="dg-ml" text-anchor="middle">endless</text>
+        <path d="M650 56 h20" class="dg-arrow" marker-end="url(#ar2)"/>
+        <rect x="674" y="34" width="100" height="44" rx="9" class="dg-box" stroke-width="1.5"/><text x="724" y="56" class="dg-t" text-anchor="middle">base45</text><text x="724" y="70" class="dg-m" text-anchor="middle">776 chars</text>
+        <path d="M778 56 h20" class="dg-arrow" marker-end="url(#ar2)"/>
+        <rect x="802" y="34" width="97" height="44" rx="9" class="dg-ink"/><text x="850" y="56" class="dg-tp" text-anchor="middle">QR v18</text><text x="850" y="70" class="dg-tp" text-anchor="middle" style="font-size:10.5px;opacity:.72">10 fps</text>
+      </g>
+      <text x="0" y="18" class="dg-m">SENDER</text>
+      <text x="0" y="110" class="dg-m">Receiver runs it backwards: QR → base45 → frame → solve → decrypt → inflate → verify SHA-256 → save</text>
+      <defs><marker id="ar2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 z" fill="var(--faint)"/></marker></defs>
+    </svg>
+    <figcaption>Order matters. Compression must come before encryption, because ciphertext is indistinguishable from random noise and therefore cannot be compressed at all.</figcaption>
+  </figure>
+
+  <h3>Stage 1 — Pack</h3>
+  <div class="prose">
+    <p>The file is deflated at level 6, in 128 KB chunks that yield to the event loop between them so the screen keeps animating. The result is kept only if it saves at least 3% of the bytes; a flag in the key frame records whether it was used.</p>
+    <p>Text, CSV, JSON and Office documents shrink dramatically. JPEGs, ZIPs and most PDFs do not, because their contents are already compressed — so the packer gives up after a megabyte if it has saved under 1%, and the file streams as-is. Since the channel is the bottleneck, every byte removed here is time saved directly.</p>
+  </div>
+
+  <h3>Stage 2 — Seal</h3>
+  <div class="prose">
+    <p>A 256-bit key and 96-bit nonce come from the operating system's cryptographic random generator. The packed bytes are encrypted with AES-256-GCM, which appends a 16-byte authentication tag. Separately, SHA-256 is taken over the <em>original</em> file, so the receiver can prove it rebuilt the exact bytes that were picked, not merely something that decrypted cleanly.</p>
+  </div>
+
+  <h3>Stage 3 — Frame</h3>
+  <div class="prose"><p>Two frame types go on the wire. Everything the receiver needs once is in the key frame; everything repeated lives in the data frames, where every byte costs time.</p></div>
+
+  <h4>Key frame <span class="pill k">amber · shown once</span></h4>
+  <div class="scroll"><div class="bytes">
+    <div style="flex:2"><b>QK</b><span>2</span></div>
+    <div style="flex:1"><b>ver</b><span>1</span></div>
+    <div style="flex:4"><b>session</b><span>4</span></div>
+    <div class="k" style="flex:32"><b>key</b><span>32</span></div>
+    <div class="k" style="flex:12"><b>nonce</b><span>12</span></div>
+    <div style="flex:2"><b>K</b><span>2</span></div>
+    <div style="flex:2"><b>blk</b><span>2</span></div>
+    <div style="flex:4"><b>size</b><span>4</span></div>
+    <div style="flex:1"><b>fl</b><span>1</span></div>
+    <div style="flex:4"><b>raw</b><span>4</span></div>
+    <div style="flex:32"><b>sha-256</b><span>32</span></div>
+    <div style="flex:16"><b>mime</b><span>1+n</span></div>
+    <div style="flex:20"><b>name</b><span>1+n</span></div>
+  </div></div>
+  <p class="cap">129 bytes for a typical file name, which encodes to 194 base45 characters and a small, easily-scanned QR. Half of it is the key and nonce; the rest tells the receiver how many blocks to expect, how big they are, whether to inflate afterwards, what to call the file, and what it must hash to.</p>
+
+  <h4>Data frame <span class="pill g">green · repeated forever</span></h4>
+  <div class="scroll"><div class="bytes">
+    <div style="flex:3"><b>QD</b><span>2</span></div>
+    <div style="flex:1.5"><b>ver</b><span>1</span></div>
+    <div style="flex:6"><b>session</b><span>4</span></div>
+    <div style="flex:6"><b>seed</b><span>4</span></div>
+    <div style="flex:3"><b>K</b><span>2</span></div>
+    <div class="p" style="flex:62"><b>payload</b><span>500 B · one block, or an XOR of many</span></div>
+    <div style="flex:6"><b>crc-32</b><span>4</span></div>
+  </div></div>
+  <div class="prose">
+    <p>Seventeen bytes of overhead on a 500-byte payload: 3.3%. Each field earns its place.</p>
+  </div>
+  <ul class="plain">
+    <li><code>session</code> — four random bytes identifying this transfer. If two people stream in the same room, the receiver ignores frames that are not its sender's, and says so on screen.</li>
+    <li><code>seed</code> — the whole trick. This number alone tells the receiver which blocks the payload combines, so the sender never has to list them.</li>
+    <li><code>crc-32</code> — QR has its own Reed–Solomon correction, so a bad decode is rare, but it is catastrophic here: one corrupt payload poisons every block it touches in the linear system. The CRC is the seatbelt.</li>
+  </ul>
+</section>
+
+<section id="fountain">
+  <div class="shead"><span class="snum">06</span><h2>Fountain codes: the heart of it</h2></div>
+  <p class="lede">The single most interesting piece of engineering in this project, and the one that will get questions.</p>
+
+  <div class="prose">
+    <p>Set up the problem first, because the solution only impresses if the audience feels the difficulty.</p>
+    <p>The file is 48 blocks. The sender shows them in order. The camera, being a camera pointed at a moving screen by a human hand, misses blocks 7, 22 and 40. Now what? Over Wi‑Fi, the receiver says "resend 7, 22 and 40". Here it has no voice. The screen cannot hear it.</p>
+    <p>The naive fix is to loop: show all 48 again, and again, until the receiver has them all. That works, and it is terrible. With 15% of frames missed, you need many full passes, because each pass is likely to miss <em>a different</em> block, and the coupon-collector maths is brutal.</p>
+  </div>
+
+  <div class="say">
+    <span class="tag">The line that makes it click</span>
+    <p>"Think of a fountain. You do not ask a fountain for a specific droplet. You hold up a cup, and when the cup is full, you have water. It does not matter which droplets you caught."</p>
+  </div>
+
+  <h3>How a repair frame is built</h3>
+  <div class="prose">
+    <p>After the in-order pass, the sender starts emitting <b>repair frames</b>. A repair frame is the XOR of a random half of the blocks — block 3 XOR block 9 XOR block 17 XOR block 31, and so on. Which half is chosen by a seeded random number generator, and the seed is written in the frame header.</p>
+    <p>So the receiver, reading only the seed, runs the identical generator and knows exactly which blocks went into that payload, without the sender spending a single byte listing them. That is why the same deterministic generator lives in both the encoder and the decoder, and why it is hand-written rather than using <code>Math.random</code>: the sequence must be identical to the bit on both phones forever.</p>
+  </div>
+
+  <pre><i>// Both sides derive the same block set from the seed alone</i>
+maskFor(seed) {
+  <b>if</b> (seed % cycle &lt; K) <i>// in-order pass: just block q</i>
+    <b>return</b> bit(seed % cycle);
+  <b>const</b> rng = <b>new</b> FrameRng(mix(seed));   <i>// deterministic, 32-bit</i>
+  <b>for</b> (w = 0; w &lt; words; w++)
+    mask[w] = rng.nextWord();            <i>// each block in with p = ½</i>
+  <b>return</b> mask;
+}</pre>
+
+  <h3>Solving it: linear algebra over one bit</h3>
+  <div class="prose">
+    <p>Here is the reframe that makes the whole thing tractable. Every frame is an <em>equation</em>. The unknowns are the blocks. XOR is addition in a number system with only two values, 0 and 1 — mathematicians call it GF(2), the field of two elements.</p>
+    <p>A frame carrying block 3 alone says <code>b₃ = (those bytes)</code>. A repair frame says <code>b₃ ⊕ b₉ ⊕ b₁₇ = (those bytes)</code>. Collect enough independent equations and you can solve for every unknown. This is Gaussian elimination, the same procedure as solving simultaneous equations in school, except addition and subtraction are both just XOR, which is why it is so fast.</p>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 900 250" role="img" aria-label="Worked example of solving three blocks from three frames using XOR">
+      <text x="0" y="16" class="dg-m">THREE UNKNOWN BLOCKS, THREE FRAMES ARRIVE</text>
+
+      <rect x="0" y="32" width="270" height="86" rx="10" class="dg-box" stroke-width="1.5"/>
+      <text x="16" y="55" class="dg-t">What arrives</text>
+      <text x="16" y="78" class="dg-m">f₁ = b₁</text>
+      <text x="16" y="96" class="dg-m">f₂ = b₁ ⊕ b₂</text>
+      <text x="16" y="114" class="dg-m">f₃ = b₂ ⊕ b₃</text>
+
+      <path d="M282 75 h26" class="dg-arrow" marker-end="url(#ar3)"/>
+
+      <rect x="320" y="32" width="270" height="86" rx="10" class="dg-lock" stroke-width="1.5"/>
+      <text x="336" y="55" class="dg-t">Solving, in order</text>
+      <text x="336" y="78" class="dg-ml">b₁ = f₁            (one term: done)</text>
+      <text x="336" y="96" class="dg-ml">b₂ = f₂ ⊕ b₁      (substitute)</text>
+      <text x="336" y="114" class="dg-ml">b₃ = f₃ ⊕ b₂      (substitute)</text>
+
+      <path d="M602 75 h26" class="dg-arrow" marker-end="url(#ar3)"/>
+
+      <rect x="640" y="32" width="259" height="86" rx="10" class="dg-key" stroke-width="1.5"/>
+      <text x="656" y="55" class="dg-t">Result</text>
+      <text x="656" y="78" class="dg-mk">3 blocks from 3 frames.</text>
+      <text x="656" y="96" class="dg-mk">No frame was "block 3",</text>
+      <text x="656" y="114" class="dg-mk">yet block 3 is recovered.</text>
+
+      <rect x="0" y="146" width="899" height="100" rx="10" class="dg-fill" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="20" y="172" class="dg-t">The same thing as a matrix</text>
+      <text x="20" y="196" class="dg-m">⎡1 0 0⎤ ⎡b₁⎤   ⎡f₁⎤        Each row is a frame. Each column is a block. A 1 means</text>
+      <text x="20" y="214" class="dg-m">⎢1 1 0⎥ ⎢b₂⎥ = ⎢f₂⎥        "this block is in this frame". Reduce to the identity</text>
+      <text x="20" y="232" class="dg-m">⎣0 1 1⎦ ⎣b₃⎦   ⎣f₃⎦        matrix and the right-hand side is the file.</text>
+      <defs><marker id="ar3" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 z" fill="var(--faint)"/></marker></defs>
+    </svg>
+    <figcaption>Scaled up, the matrix for a 200 KB file is 401 columns wide. The decoder never builds it all at once — it reduces each row as it arrives.</figcaption>
+  </figure>
+
+  <h3>Why it is incremental, not batch</h3>
+  <div class="prose">
+    <p>A textbook implementation would collect all the frames and then solve. That would mean a frozen screen for a second at the end and no progress to show along the way. Instead the decoder keeps rows in <em>echelon form</em> as they arrive, indexed by their lowest set bit:</p>
+  </div>
+  <ol class="plain">
+    <li>A frame arrives. XOR out every block already known, clearing those bits.</li>
+    <li>Reduce what remains against the stored pivot rows.</li>
+    <li>If one bit is left, that block is solved — and the solution is pushed back through every stored row, which often cascades into solving several more.</li>
+    <li>Otherwise store it as a new pivot row.</li>
+    <li>Once there is a pivot for every remaining unknown, one back-substitution pass finishes the file.</li>
+  </ol>
+  <div class="prose">
+    <p>This is why the block grid on the receiver's screen fills left to right during the in-order pass, stalls at the gaps, then jumps to complete all at once. That visual is not a designed flourish — it is literally the algorithm reaching full rank. The progress display shows blocks rather than a percentage bar for exactly that reason: a linear bar would be a lie.</p>
+  </div>
+
+  <h3>The cycle, and the number 0.35</h3>
+  <div class="prose">
+    <p>The stream runs in cycles of <code>K + ⌈0.35 K⌉</code> frames: the in-order pass, then repair frames worth 35% of the file, then the pass again for anyone who arrived late. For a 48-block file that is 48 + 17 = 65 frames per cycle.</p>
+    <p>A receiver that missed <em>u</em> blocks needs about <em>u</em> + 2 repair frames to recover, whichever blocks they were — dense repair frames are near-optimal for this. 35% therefore covers loss up to roughly a quarter of frames within a single cycle, which is well beyond what a steady hand produces. Past that, a second cycle finishes the job.</p>
+  </div>
+
+  <div class="note"><b>This design replaced a textbook one.</b> The first implementation used the classic Luby Transform scheme: a robust soliton degree distribution with a peeling decoder. Measured, it needed about 1.4× the theoretical minimum number of frames. The reason is specific — after a systematic first pass, a degree-2 repair frame only helps if <em>both</em> its blocks are missing, which is rare. Dense frames plus real elimination now finish a 200 KB transfer at 15% loss within <b>6%</b> of the information-theoretic floor. The tests assert that bound, so it cannot silently regress.</div>
+</section>
+
+<section id="crypto">
+  <div class="shead"><span class="snum">07</span><h2>Cryptography and the threat model</h2></div>
+  <p class="lede">Be precise about what this protects against and what it does not. Overclaiming security is the fastest way to lose a technical audience.</p>
+
+  <h3>What happens</h3>
+  <ol class="plain">
+    <li>The OS cryptographic generator produces a 256-bit key and a 96-bit nonce, fresh for every transfer.</li>
+    <li>The packed file is encrypted with <b>AES-256-GCM</b>, an authenticated cipher: it provides confidentiality <em>and</em> tamper detection, appending a 16-byte tag.</li>
+    <li>SHA-256 is computed over the original file, and travels in the key frame.</li>
+    <li>The receiver decrypts, checks the GCM tag, inflates if flagged, then checks the SHA-256. Any failure means nothing is saved and the screen says why.</li>
+  </ol>
+
+  <div class="two">
+    <div>
+      <h4>What it defends against</h4>
+      <ul class="plain">
+        <li>Someone who walks in <em>after</em> the key QR has gone. They see only ciphertext — no file name, no size, no way to test a guess.</li>
+        <li>A recording of the stream, played back later. Same result: without the key it is noise.</li>
+        <li>Corruption in transit. The GCM tag and the SHA-256 both have to match.</li>
+        <li>Data at rest leaving the phone. Nothing is uploaded, no account exists, the session key is held in memory and dropped when the flow ends.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>What it does not defend against</h4>
+      <ul class="plain">
+        <li><b>A second camera during those three seconds.</b> If someone films the key QR, they can decrypt everything. The security model is literally "who can see the screen right now".</li>
+        <li><b>Proving who the receiver is.</b> The sender cannot tell which phone scanned the key.</li>
+        <li>A compromised phone. If the OS is owned, so is the file.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="say">
+    <span class="tag">Answer to "is that secure enough?"</span>
+    <p>"The trust model is line of sight, and it's deliberate. You can see who is in the room and who is holding a phone up. That's a weaker guarantee than a signed certificate chain, but it's one a human can actually verify — which is more than most people can say about the apps they send documents through."</p>
+  </div>
+
+  <h3>The upgrade path, if asked</h3>
+  <div class="prose">
+    <p>Authenticating the receiver is a known extension and does not change the stream format at all. The receiver would display its own public key as a QR first; the sender scans it and wraps the session key with X25519 for that receiver alone. Two scans instead of one, and everything after is identical. Worth mentioning because it shows the design has room.</p>
+  </div>
+</section>
+
+<section id="qr">
+  <div class="shead"><span class="snum">08</span><h2>Getting bytes into a QR code</h2></div>
+  <p class="lede">There is a real optimisation here, and a genuine bug that was caught while preparing this document.</p>
+
+  <h3>Why base45 and not base64</h3>
+  <div class="prose">
+    <p>QR codes have four encoding modes. Two matter: <b>byte mode</b> stores 8 bits per character, and <b>alphanumeric mode</b> packs two characters into 11 bits — 5.5 bits each — but only from a restricted 45-character set: digits, uppercase letters, space, and eight symbols.</p>
+    <p>Binary data has to be turned into text to use alphanumeric mode. base64 needs characters outside that set, forcing byte mode. <b>base45</b> (RFC 9285) was designed for exactly this: its alphabet <em>is</em> the QR alphanumeric set, and it packs two bytes into three characters.</p>
+  </div>
+
+  <div class="scroll"><table>
+    <thead><tr><th>Encoding</th><th>QR mode</th><th class="num">Bits per 2 bytes</th><th class="num">Overhead</th></tr></thead>
+    <tbody>
+      <tr><td>Raw binary</td><td>byte</td><td class="num">16.0</td><td class="num">0% (theoretical)</td></tr>
+      <tr><td><b>base45</b> <span class="pill g">used</span></td><td>alphanumeric</td><td class="num">16.5</td><td class="num">3%</td></tr>
+      <tr><td>base64</td><td>byte</td><td class="num">21.3</td><td class="num">33%</td></tr>
+    </tbody>
+  </table></div>
+  <p class="cap">Raw binary looks free but is not usable: the iOS and Android scanner APIs differ in how they hand back non-text payloads, while both return alphanumeric text identically. base45 costs 3% and works the same everywhere — the right trade for a protocol that must be byte-identical across platforms.</p>
+
+  <h3>The bug found while writing this brief</h3>
+  <div class="prose">
+    <p>The QR library, left to its own devices, picks the smallest symbol that fits. It also spots runs of digits and packs those into numeric mode, which is denser still. Both are sensible defaults. Together they caused a serious defect.</p>
+    <p>Every frame carries different ciphertext, so the digits fall differently each time. Measured across 200 consecutive frames at the Balanced preset, the symbol landed on <b>version 14, 15 or 18</b> depending on the frame — a 73-module code, an 77-module code and an 89-module code, all drawn into the same square on screen. The module pitch changed on every single frame, forcing the receiver's camera to re-lock scale ten times a second.</p>
+    <p>The fix is one argument: pin the version per preset, so the symbol is <em>always</em> 89 modules at Balanced. A regression test now renders 60 frames at each preset and asserts exactly one size comes out.</p>
+  </div>
+
+  <pre><i>// Before: the encoder chose. Frames wandered v14 → v18.</i>
+QRCode.create(text, { errorCorrectionLevel: 'M' })
+
+<i>// After: pinned per preset. Every frame is identical in size.</i>
+QRCode.create(text, { errorCorrectionLevel: 'M', <span class="g">version</span> })</pre>
+
+  <div class="say">
+    <span class="tag">This is a great story to tell</span>
+    <p>"The unit tests all passed. The code was correct in the sense that every frame decoded. It was only wrong <em>as a physical transmission</em> — the picture kept changing size, and a camera has to refocus when that happens. That's the class of bug you only find by thinking about what the hardware on the other end is doing."</p>
+  </div>
+
+  <h3>Error correction level</h3>
+  <div class="prose">
+    <p>QR codes carry Reed–Solomon correction at one of four levels. QRelay uses <b>M</b>, which tolerates about 15% damage and spends about 15% of the symbol on redundancy. Level L would fit more data per frame but breaks up under glare and motion blur; level Q or H would survive a coffee stain, which is not the failure mode when the "paper" is a glowing screen 20 cm away. M is the right point for a clean, close, well-lit target.</p>
+  </div>
+</section>
+<section id="render">
+  <div class="shead"><span class="snum">09</span><h2>Rendering and motion</h2></div>
+  <p class="lede">Ten QR frames a second, every one freshly computed, while the rest of the interface stays at 60.</p>
+
+  <h3>Drawing a QR without images</h3>
+  <div class="prose">
+    <p>The obvious approach — render each frame to a PNG and swap an image — means encoding a bitmap ten times a second and pushing it across to native. Instead the module grid is converted into <b>a single SVG path</b>: runs of adjacent dark modules on a row merge into one rectangle, so an 89-module frame becomes a few hundred sub-paths instead of several thousand separate squares.</p>
+    <p>One detail worth mentioning because it is the kind of thing that only shows up on a real screen: each row's rectangle is drawn 1.03 modules tall rather than exactly 1. Anti-aliasing between two rows that touch exactly can leave a hairline of background colour, and a hairline through a QR code is damage the decoder has to correct. A 3% overlap removes it.</p>
+  </div>
+
+  <h3>Building frames before they are needed</h3>
+  <div class="prose">
+    <p>Composing a frame — XOR the blocks, base45 it, run the QR encoder, build the path — takes a few milliseconds. At 10 fps there is a 100 ms budget, so it fits, but doing it exactly when the frame is due means a visible stutter whenever the work lands badly.</p>
+    <p>A small cache builds ahead instead: forty frames deep, one per turn of the event loop, so each piece of work is a few milliseconds and never a long block. Frames behind the playhead are dropped. If the stream ever outruns the builder the screen counts the stalls and shows them, rather than pretending.</p>
+  </div>
+
+  <h3>Animations that cannot stutter</h3>
+  <div class="prose">
+    <p>Every animation in the app runs through Reanimated, which compiles animation callbacks into "worklets" that execute <b>on the UI thread</b> rather than in JavaScript. The practical consequence: while the JavaScript thread is busy XOR-ing a 2,000-block file, the countdown ring still drains smoothly and the button still springs under a finger, because those animations are not waiting on JavaScript at all.</p>
+    <p>One spring is shared by everything: mass 1, stiffness 420, damping 22 — about 340 ms to settle with one small overshoot. Controls give 4% under a finger in 80 ms and spring back on release. Using a single physical model everywhere is what makes an interface feel like one object rather than a pile of components.</p>
+  </div>
+
+  <div class="scroll"><table>
+    <thead><tr><th>Moment</th><th>What moves</th><th>Why that choice</th></tr></thead>
+    <tbody>
+      <tr><td>Any press</td><td>Scale to 0.96, spring back, haptic tap</td><td>Confirms the touch landed before the screen has changed</td></tr>
+      <tr><td>Preset change</td><td>Thumb slides on a stiffer spring; the time estimate re-counts</td><td>The number is the point, so it gets its own transition</td></tr>
+      <tr><td>Key screen</td><td>Ring drains over 3 s; two soft pulses</td><td>Pulses say "this is live", the ring says "and it is going away"</td></tr>
+      <tr><td>Stream frames</td><td><em>Nothing.</em> Frames cut instantly</td><td>A crossfade would blend two QR codes into an unreadable one</td></tr>
+      <tr><td>Camera lock</td><td>Reticle snaps inward, recolours amber then green</td><td>Colour is the protocol phase: amber is key, green is data</td></tr>
+      <tr><td>Blocks solving</td><td>Cells pop 70% → 100% with an overshoot</td><td>Mirrors the decoder cascading through the linear system</td></tr>
+      <tr><td>Verified</td><td>Checkmark draws itself over 550 ms</td><td>The one moment worth a beat of its own</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note"><b>Accessibility detail worth a sentence on stage:</b> iOS and Android both have a "Reduce Motion" setting, and Reanimated honours it automatically — which initially meant a phone with it enabled got no animation at all. The app now offers "Follow system" or "Always on", and pins <em>one</em> animation to always run: the key countdown, because under Reduce Motion it would jump straight to the end and start the stream instantly. Motion that carries meaning is not decoration.</div>
+</section>
+
+<section id="walk">
+  <div class="shead"><span class="snum">10</span><h2>A transfer, moment by moment</h2></div>
+  <p class="lede">Narrate this over a live demo, or use it as the backbone of the talk. Times are for a 23 KB PDF at the Balanced preset.</p>
+
+  <ol class="tl">
+    <li><span class="t">t = 0</span><div><h4>Pick</h4><p>The system file picker returns a handle. The app checks the size <em>before</em> reading any bytes — a 30 MB video is rejected on the spot rather than after loading it into memory.</p></div></li>
+    <li><span class="t">+ 0.2 s</span><div><h4>Estimate</h4><p>The Send screen shows 48 blocks and "about 8 s". The estimate is real arithmetic — block count ÷ frame rate, plus the key hold and 5% repair allowance — not a guess. Changing preset re-counts it immediately.</p></div></li>
+    <li><span class="t">+ 0.3 s</span><div><h4>Pack, hash, seal</h4><p>Deflate runs in chunks (this PDF does not shrink, so it is skipped). The OS hashes the file. AES-256-GCM encrypts. Progress labels name the actual step, because on a large file this is several seconds and a spinner with no noun is useless.</p></div></li>
+    <li><span class="t">+ 0.5 s</span><div><h4>Two confirmations</h4><p>"Receiver has the camera open" and "screens 20–30 cm apart". Not bureaucracy — a stream started before the other phone is ready wastes the entire key window, which is the one non-recoverable part of the protocol.</p></div></li>
+    <li><span class="t">+ 1 s</span><div><h4>Key <span class="pill k">amber</span></h4><p>Brightness goes to 100% and sleep is blocked. The key QR appears inside a ring that drains over three seconds. The receiver's reticle snaps and turns amber: <code>keyLocked</code>. It now knows the file name, size, block count, and what the result must hash to.</p></div></li>
+    <li><span class="t">+ 4 s</span><div><h4>Stream <span class="pill g">green</span></h4><p>The screen goes black and frames begin at 10 fps. Black stage, white card: maximum contrast, no interface glow near the code. Telemetry shows frame number, pass or repair, and elapsed time.</p></div></li>
+    <li><span class="t">+ 4–12 s</span><div><h4>Receive</h4><p>The camera decodes on its own thread and hands strings to JavaScript. Each one is CRC-checked, session-checked, deduplicated by seed, then XOR-ed into the linear system. Blocks pop green as they solve. Updates to the screen are throttled to about 10 per second — the camera fires far more often than a human eye needs.</p></div></li>
+    <li><span class="t">+ 12 s</span><div><h4>Full rank</h4><p>The last equations resolve together and the grid completes. Phase goes to <code>verifying</code>; the app yields one frame so that label actually paints before the decrypt work begins.</p></div></li>
+    <li><span class="t">+ 12.3 s</span><div><h4>Verify and save</h4><p>Decrypt, check the GCM tag, inflate if flagged, check SHA-256 against the value from the key frame. Only then is anything written to disk. The checkmark draws itself. A failure at any step saves nothing and explains which step failed.</p></div></li>
+  </ol>
+</section>
+
+<section id="numbers">
+  <div class="shead"><span class="snum">11</span><h2>The numbers</h2></div>
+  <p class="lede">Have these ready. Someone will ask how big and how slow.</p>
+
+  <h3>The three presets</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Preset</th><th class="num">Payload</th><th class="num">Frame</th><th class="num">Rate</th><th class="num">QR</th><th class="num">Raw speed</th><th>For</th></tr></thead>
+    <tbody>
+      <tr><td>Reliable</td><td class="num">300 B</td><td class="num">317 B</td><td class="num">8 fps</td><td class="num">v13 · 69 mod</td><td class="num">2.3 KB/s</td><td>Older cameras, glare, low light</td></tr>
+      <tr><td>Balanced <span class="pill n">default</span></td><td class="num">500 B</td><td class="num">517 B</td><td class="num">10 fps</td><td class="num">v18 · 89 mod</td><td class="num">4.9 KB/s</td><td>Any phone from 2019 on</td></tr>
+      <tr><td>Fast</td><td class="num">900 B</td><td class="num">917 B</td><td class="num">12 fps</td><td class="num">v25 · 117 mod</td><td class="num">10.5 KB/s</td><td>Recent phones, steady hands, 20 cm</td></tr>
+    </tbody>
+  </table></div>
+  <p class="cap">Bigger frames mean more data per flash but finer modules, which need a better camera and a steadier hand. The QR version is now pinned per preset, so every frame in a stream is exactly the size shown here.</p>
+
+  <h3>How long a transfer takes</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>File</th><th class="num">Blocks (Balanced)</th><th class="num">Reliable</th><th class="num">Balanced</th><th class="num">Fast</th></tr></thead>
+    <tbody>
+      <tr><td>23 KB PDF</td><td class="num">48</td><td class="num">14 s</td><td class="num">8 s</td><td class="num">6 s</td></tr>
+      <tr><td>195 KB document</td><td class="num">401</td><td class="num">1.5 min</td><td class="num">46 s</td><td class="num">23 s</td></tr>
+      <tr><td>1 MB file</td><td class="num">2,098</td><td class="num">7.7 min</td><td class="num">3.7 min</td><td class="num">1.8 min</td></tr>
+    </tbody>
+  </table></div>
+  <p class="cap">Assuming no missed frames. Real transfers add whatever the camera drops, which the fountain layer absorbs at a cost measured below. The app warns above 1 MB and refuses above 20 MB, because holding two phones still for an hour is not a feature.</p>
+
+  <h3>Fountain efficiency, measured</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Scenario</th><th class="num">Ideal frames</th><th class="num">Actual</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>No loss, 48 blocks</td><td class="num">48</td><td class="num">48</td><td>Exactly optimal — the in-order pass is the whole file</td></tr>
+      <tr><td>15% loss, 48 blocks</td><td class="num">57</td><td class="num">&lt; 69</td><td>Within 15% of the floor</td></tr>
+      <tr><td>15% loss, 401 blocks</td><td class="num">472</td><td class="num">&lt; 500</td><td><b>Within 6%</b> — large files are where it shines</td></tr>
+      <tr><td>Repair frames only</td><td class="num">K</td><td class="num">K + 6</td><td>A receiver that missed the whole pass still finishes</td></tr>
+      <tr><td>50% loss</td><td class="num">96</td><td class="num">&lt; 192</td><td>Completes inside a second cycle</td></tr>
+    </tbody>
+  </table></div>
+  <p class="cap">Every row here is an assertion in the test suite, not an estimate. If a change makes the codec less efficient, the tests fail.</p>
+
+  <h3>The app itself</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Measure</th><th class="num">Value</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>TypeScript</td><td class="num">5,655 lines</td><td>53 source files</td></tr>
+      <tr><td>Bundle</td><td class="num">5.0 MB</td><td>Hermes bytecode, 2,020 modules</td></tr>
+      <tr><td>Fonts shipped</td><td class="num">7 files</td><td>Bricolage Grotesque + JetBrains Mono, so nothing loads at runtime</td></tr>
+      <tr><td>Tests</td><td class="num">36</td><td>About one second, no device needed</td></tr>
+      <tr><td>Network calls</td><td class="num">0</td><td>After the bundle loads</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="tests">
+  <div class="shead"><span class="snum">12</span><h2>How it is verified</h2></div>
+  <p class="lede">Worth a slide. It is what separates a prototype from engineering.</p>
+
+  <div class="prose">
+    <p>Because <code>src/core</code> has no React or Expo imports, the entire protocol runs under a test runner on a laptop. Thirty-six tests, roughly a second, no phone involved.</p>
+  </div>
+
+  <div class="scroll"><table>
+    <thead><tr><th>Test group</th><th>What it proves</th></tr></thead>
+    <tbody>
+      <tr><td>base45 vectors</td><td>Encoding matches the published RFC 9285 test vectors exactly, and every output character is inside the QR alphanumeric set</td></tr>
+      <tr><td>CRC-32 check value</td><td>Matches the standard <code>"123456789" → 0xCBF43926</code>, so it is the same CRC everyone else uses</td></tr>
+      <tr><td>Framing</td><td>Round-trips; a single flipped bit fails the CRC; a key frame is never mistaken for a data frame</td></tr>
+      <tr><td>Fountain round trips</td><td>At 0, 15, 30 and 50% simulated loss the rebuilt bytes are identical to the source, within a measured frame budget</td></tr>
+      <tr><td>Mid-stream join</td><td>A receiver starting in the middle of a cycle still completes</td></tr>
+      <tr><td>Repair-only decode</td><td>A receiver that sees no in-order frames at all finishes within K + 6</td></tr>
+      <tr><td>Crypto</td><td>Seal then open returns the plaintext; a flipped ciphertext byte is rejected; the wrong key is rejected</td></tr>
+      <tr><td>End to end</td><td>A full sender → receiver run at 20% loss, byte-identical output, including the "data arrived before the key" path</td></tr>
+      <tr><td>QR pinning <span class="pill g">new</span></td><td>60 frames at each preset all render at exactly one module size</td></tr>
+      <tr><td>PDF compression</td><td>The rebuilt PDF is still a valid document with the same page count</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="prose">
+    <p>Three more gates run before anything ships: <code>tsc --noEmit</code> (TypeScript in strict mode, zero errors), <code>expo lint</code> (zero warnings), and <code>expo export</code>, which bundles the app exactly as the phone will load it and so catches any import that does not resolve on the device.</p>
+  </div>
+</section>
+
+<section id="limits">
+  <div class="shead"><span class="snum">13</span><h2>Limits, and what comes next</h2></div>
+  <p class="lede">Name your own limitations before the audience does. It reads as confidence, not weakness.</p>
+
+  <div class="two">
+    <div>
+      <h4>Honest limits today</h4>
+      <ul class="plain">
+        <li><b>Speed.</b> About 5 KB/s. This is a physics ceiling, not a coding one: the camera reads ten frames a second and each holds 500 bytes.</li>
+        <li><b>20 MB cap.</b> Above that the wait is unreasonable.</li>
+        <li><b>Two phones, held still.</b> Not a background transfer. You are committed for the duration.</li>
+        <li><b>Three of six edit operations</b> need a native build Expo Go cannot provide, and say so rather than failing.</li>
+        <li><b>The presets are theoretical.</b> They were computed, not measured on real hardware. The first real session tunes them from the on-screen decode rate.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Where it goes</h4>
+      <ul class="plain">
+        <li><b>Measure and re-tune</b> the presets from the live decode counter.</li>
+        <li><b>Authenticate the receiver</b> with X25519, two scans, stream format unchanged.</li>
+        <li><b>Colour QR</b> — three data layers in one symbol using red, green and blue channels, potentially tripling throughput. The decoder maths already supports any block source.</li>
+        <li><b>A development build</b> to unlock OCR and document conversion.</li>
+        <li><b>A live camera-rate readout</b> so the app picks its own preset by watching how fast the receiver is actually decoding.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="say">
+    <span class="tag">Closing line</span>
+    <p>"It is not going to replace AirDrop. What it shows is that if you treat a screen as a transmitter and take the engineering seriously — coding theory, real cryptography, honest interface design — two devices that share nothing but a line of sight can still move a file, verifiably and privately."</p>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="shead"><span class="snum">14</span><h2>Questions you will get</h2></div>
+  <p class="lede">Tap to open. Answers are short on purpose — say the first sentence, and expand only if they push.</p>
+
+  <div class="qa">
+    <details><summary>Why not just use Bluetooth or AirDrop?</summary><div class="ans"><p>They are faster, and for everyday use you should. This solves a different problem: transfer when there is no shared network, when radios are off or blocked, or across a boundary where you do not want a pairing record at all — between an air-gapped machine and a phone, for example. And it is verifiable by eye: you can see exactly where the data is going.</p></div></details>
+
+    <details><summary>Is JavaScript not too slow for cryptography?</summary><div class="ans"><p>For AES-256-GCM at these sizes, no — the library is an audited constant-time implementation and encryption of a 1 MB file takes a fraction of the time the stream itself needs. But two things <em>were</em> too slow or impossible in JavaScript and were moved to the OS: hashing a large file with SHA-256, and generating cryptographic randomness, which Hermes cannot do at all because it has no <code>crypto</code> global.</p></div></details>
+
+    <details><summary>What happens if the camera misses frames?</summary><div class="ans"><p>Nothing special — that is the normal case the protocol is built for. The sender keeps emitting repair frames, each an XOR of a random half of the blocks. Any sufficiently large set of frames reconstructs the file, so missing specific ones does not matter. Measured, a 200 KB transfer with 15% of frames dropped finishes within 6% of the theoretical minimum number of frames.</p></div></details>
+
+    <details><summary>Could someone steal the file by filming the screen?</summary><div class="ans"><p>Only if they filmed the first three seconds. The stream is AES-256-GCM ciphertext; the key exists in one QR code, shown once. Someone who arrives after that gets random-looking bytes with no file name and no size. Someone who <em>was</em> there for the key, camera up, can decrypt it — and that is the deliberate trust model: whoever can see the screen at that moment is who you are sending to.</p></div></details>
+
+    <details><summary>Why did you rewrite it from Flutter?</summary><div class="ans"><p>A practical constraint. Building a Flutter app for an iPhone requires a Mac, and I develop on Windows. Expo Go runs a React Native app on an iPhone straight from a Windows PC with no signing and no Apple account.</p><p>The rewrite is itself the argument for how the code is organised: the protocol layer was translated almost line for line, its tests came with it, and only the interface was genuinely rebuilt. When the framework is replaceable, the framework was not the interesting part.</p></div></details>
+
+    <details><summary>Why write your own fountain code instead of using a library?</summary><div class="ans"><p>The first version <em>was</em> the textbook algorithm — Luby Transform with a robust soliton distribution and a peeling decoder. Measured, it needed about 1.4× the minimum number of frames, because after an in-order first pass the low-degree repair frames a soliton distribution produces are usually redundant. Dense frames plus real Gaussian elimination brought that to within 6%. The lesson: the standard algorithm was designed for a case that is not quite this one.</p></div></details>
+
+    <details><summary>How do the two phones stay in sync without talking?</summary><div class="ans"><p>They do not need to. Every frame carries a seed, and both sides run an identical deterministic random number generator over it, so the receiver derives exactly which blocks a payload combines from that one number. The generator is hand-written rather than the language's built-in one precisely because the sequence has to be identical on both phones forever.</p></div></details>
+
+    <details><summary>What if two people stream in the same room?</summary><div class="ans"><p>Each transfer has a random four-byte session id in every frame. The receiver locks to the session in the key it scanned and ignores the rest, and the status line tells you it is doing so.</p></div></details>
+
+    <details><summary>Why encrypt before compressing, or is it the other way around?</summary><div class="ans"><p>Compress first, then encrypt — and the order is forced. Encryption output is statistically indistinguishable from random noise, and random data does not compress. Doing it the other way would save nothing. The app also only keeps the compressed version if it saves at least 3%, so a JPEG or a ZIP streams as-is instead of paying for a pointless inflate on the other end.</p></div></details>
+
+    <details><summary>How big can a file be?</summary><div class="ans"><p>Hard cap 20 MB, warning above 1 MB. At 5 KB/s, 20 MB would take over an hour of holding two phones still. The limit is a UX decision rather than a technical one — the protocol itself handles up to 65,535 blocks.</p></div></details>
+
+    <details><summary>Does it work in the dark? Through glass? On a cracked screen?</summary><div class="ans"><p>Dark is fine, the screen is the light source and the app forces brightness to maximum. Glass is fine unless it reflects — glare is the real enemy, which is why the Reliable preset exists with fewer, larger modules. A cracked screen degrades gracefully: QR's Reed–Solomon correction absorbs roughly 15% damage per frame, and anything it cannot fix is just another dropped frame the fountain layer already handles.</p></div></details>
+
+    <details><summary>What was the hardest bug?</summary><div class="ans"><p>A frozen button with no error. Generating the session key called <code>crypto.getRandomValues</code>, which exists in every browser and in Node but not in Hermes, so it threw. The error should have surfaced as a toast — but the toast animation had a second bug where two assignments to the same animated value cancelled each other, so nothing appeared. Two unrelated bugs producing one silent symptom.</p><p>The most <em>interesting</em> bug is the QR one: frames changing size ten times a second because the encoder was being clever about digit runs. Every test passed. It was only wrong as physics.</p></div></details>
+  </div>
+</section>
+
+<section id="demo">
+  <div class="shead"><span class="snum">15</span><h2>Demo runbook</h2></div>
+  <p class="lede">Live demos fail in rooms with projectors and bad lighting. Plan for it.</p>
+
+  <h3>Before you leave</h3>
+  <ol class="plain">
+    <li>Open the app on <b>both</b> phones while you still have internet, and leave them open. Expo Go fetches the bundle once; after that the transfer itself needs no network.</li>
+    <li>Put a small, recognisable file on the sending phone — a one-page PDF around 20–50 KB. Something that finishes in under ten seconds.</li>
+    <li>Turn <b>Reduce Motion off</b>, or set Animations to "Always on" in the app's settings, so the interface actually moves.</li>
+    <li>Charge both phones. Full brightness plus camera drains fast.</li>
+    <li>Set both to <b>Do Not Disturb.</b> A notification banner over the QR is a dropped frame.</li>
+  </ol>
+
+  <h3>In the room</h3>
+  <ul class="plain">
+    <li><b>Hold 20–30 cm apart</b> and keep both phones roughly still. Brace elbows on a table if you can.</li>
+    <li><b>Avoid overhead glare.</b> If the ceiling lights reflect off the sender's screen, tilt it rather than moving further away.</li>
+    <li><b>Start the receiver first.</b> The key QR is the one non-recoverable moment — if the camera is not up, the receiver cannot decrypt anything that follows. That is exactly why the app makes you tick "Receiver has the camera open".</li>
+    <li>If the key is missed, tap <b>"Show the key again"</b> on the stream screen. It does not restart the transfer.</li>
+    <li>If scanning struggles, drop to <b>Reliable</b> in settings. Fewer, larger modules.</li>
+  </ul>
+
+  <h3>If it fails on stage</h3>
+  <div class="prose">
+    <p>Have the fallback ready and treat it as part of the talk, not an apology. The plan artifact contains a working browser prototype that streams real QR frames and decodes them with simulated camera misses — that runs on any laptop with no phones at all.</p>
+    <p>Then say the true thing: "This is a line-of-sight optical channel. Lighting and hand shake are genuine variables, which is why there are three presets and why the whole protocol is built around frames going missing." A failed demo that you can explain the physics of is a better demonstration of understanding than one that just works.</p>
+  </div>
+
+  <h3>The five-minute version, if you are cut short</h3>
+  <ol class="plain">
+    <li>The screen is a transmitter, the camera is a receiver. No network in between.</li>
+    <li>The camera cannot say "resend", so the sender never stops — fountain codes, any sufficient set of frames rebuilds the file.</li>
+    <li>Every frame is one equation, blocks are the unknowns, XOR is the arithmetic. Solve as they arrive.</li>
+    <li>Encrypted with AES-256-GCM; the key is one QR shown for three seconds, so only who is in the room can read it.</li>
+    <li>About 5 KB/s. Slow, verifiable, and it works with every radio turned off.</li>
+  </ol>
+</section>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var links = Array.prototype.slice.call(document.querySelectorAll('.nav a'));
+  var sections = links.map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); });
+  if (!('IntersectionObserver' in window)) return;
+  var active = null;
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var i = sections.indexOf(e.target);
+      if (i < 0 || active === i) return;
+      active = i;
+      links.forEach(function (a, j) {
+        a.style.color = j === i ? 'var(--text)' : '';
+        a.style.background = j === i ? 'var(--paper-3)' : '';
+      });
+    });
+  }, { rootMargin: '-56px 0px -70% 0px' });
+  sections.forEach(function (s) { if (s) io.observe(s); });
+})();
+</script>
+</body>
+</html>

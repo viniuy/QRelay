@@ -37,7 +37,7 @@ export class FrameCache {
   build(seed: number): RenderedFrame {
     const cached = this.frames.get(seed);
     if (cached) return cached;
-    const matrix = renderMatrix(this.session.frameText(seed));
+    const matrix = renderMatrix(this.session.frameText(seed), this.session.preset.qrVersion);
     const frame = { seed, matrix, path: matrixToPath(matrix, 2) };
     this.frames.set(seed, frame);
     return frame;

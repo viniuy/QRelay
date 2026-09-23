@@ -8,13 +8,18 @@ export interface BitMatrix {
 }
 
 /**
- * Encodes base45 text at error correction M in the smallest version that
- * holds it. `qrcode` picks alphanumeric/numeric segments on its own for this
- * character set, so the result is a plain alphanumeric-mode symbol any
- * scanner reads.
+ * Encodes base45 text at error correction M.
+ *
+ * `version` must be pinned for stream frames. Left to choose, `qrcode` packs
+ * runs of digits into numeric mode, and since every frame carries different
+ * ciphertext the digits fall differently each time: at 500 bytes the symbol
+ * wanders between version 14 and 18, so it physically changes size on screen
+ * and the receiver refocuses on every frame. A fixed version keeps the module
+ * pitch constant for the whole stream, which is what lets the camera lock on
+ * once and stay locked.
  */
-export function renderMatrix(text: string): BitMatrix {
-  const code = QRCode.create(text, { errorCorrectionLevel: 'M' });
+export function renderMatrix(text: string, version?: number): BitMatrix {
+  const code = QRCode.create(text, { errorCorrectionLevel: 'M', version });
   return { size: code.modules.size, data: Uint8Array.from(code.modules.data), version: code.version };
 }
 

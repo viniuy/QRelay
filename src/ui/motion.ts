@@ -1,5 +1,10 @@
-import * as Haptics from 'expo-haptics';
-import { Easing, ReduceMotion, type WithSpringConfig, type WithTimingConfig } from 'react-native-reanimated';
+import * as Haptics from "expo-haptics";
+import {
+  Easing,
+  ReduceMotion,
+  type WithSpringConfig,
+  type WithTimingConfig,
+} from "react-native-reanimated";
 
 /**
  * One spring, used everywhere.
@@ -10,23 +15,45 @@ import { Easing, ReduceMotion, type WithSpringConfig, type WithTimingConfig } fr
  * for people who want the motion anyway. Animations that carry meaning (the
  * key countdown) pass `ReduceMotion.Never` themselves and ignore both.
  */
-export const SPRING: WithSpringConfig = { mass: 1, stiffness: 420, damping: 22 };
+export const SPRING: WithSpringConfig = {
+  mass: 1,
+  stiffness: 420,
+  damping: 22,
+};
 
 /** Stiffer spring for small parts (segmented thumb, toggle knob). */
 export const SNAP: WithSpringConfig = { mass: 1, stiffness: 600, damping: 26 };
 
 export const PRESSED_SCALE = 0.96;
 
-export const PRESS: WithTimingConfig = { duration: 80, easing: Easing.out(Easing.quad) };
-export const COLOR: WithTimingConfig = { duration: 180, easing: Easing.out(Easing.quad) };
-export const FAST: WithTimingConfig = { duration: 120, easing: Easing.out(Easing.quad) };
-export const ENTER: WithTimingConfig = { duration: 320, easing: Easing.bezier(0.2, 0.8, 0.2, 1) };
-export const REVEAL: WithTimingConfig = { duration: 550, easing: Easing.bezier(0.3, 0.7, 0.3, 1) };
+export const PRESS: WithTimingConfig = {
+  duration: 80,
+  easing: Easing.out(Easing.quad),
+};
+export const COLOR: WithTimingConfig = {
+  duration: 180,
+  easing: Easing.out(Easing.quad),
+};
+export const FAST: WithTimingConfig = {
+  duration: 120,
+  easing: Easing.out(Easing.quad),
+};
+export const ENTER: WithTimingConfig = {
+  duration: 320,
+  easing: Easing.bezier(0.2, 0.8, 0.2, 1),
+};
+export const REVEAL: WithTimingConfig = {
+  duration: 550,
+  easing: Easing.bezier(0.3, 0.7, 0.3, 1),
+};
 
 /** Overshooting ease for one-shot pops (checks, block cells). */
-export const OVERSHOOT: WithTimingConfig = { duration: 300, easing: Easing.bezier(0.3, 1.6, 0.4, 1) };
+export const OVERSHOOT: WithTimingConfig = {
+  duration: 300,
+  easing: Easing.bezier(0.3, 1.6, 0.4, 1),
+};
 
-export type MotionMode = 'system' | 'always';
+export type MotionMode = "system" | "always";
 
 let currentReduce: ReduceMotion = ReduceMotion.System;
 
@@ -37,13 +64,28 @@ export function reduceMotion(): ReduceMotion {
 
 /** Applies the Settings choice to every shared config. Called on start and on change. */
 export function applyMotionMode(mode: MotionMode): void {
-  currentReduce = mode === 'always' ? ReduceMotion.Never : ReduceMotion.System;
-  for (const config of [SPRING, SNAP, PRESS, COLOR, FAST, ENTER, REVEAL, OVERSHOOT]) {
+  currentReduce = mode === "always" ? ReduceMotion.Never : ReduceMotion.System;
+  for (const config of [
+    SPRING,
+    SNAP,
+    PRESS,
+    COLOR,
+    FAST,
+    ENTER,
+    REVEAL,
+    OVERSHOOT,
+  ]) {
     config.reduceMotion = currentReduce;
   }
 }
 
-export type HapticKind = 'none' | 'light' | 'medium' | 'selection' | 'success' | 'warning';
+export type HapticKind =
+  | "none"
+  | "light"
+  | "medium"
+  | "selection"
+  | "success"
+  | "warning";
 
 let hapticsOn = true;
 
@@ -54,21 +96,21 @@ export function setHapticsEnabled(on: boolean): void {
 export function haptic(kind: HapticKind): void {
   if (!hapticsOn) return;
   switch (kind) {
-    case 'none':
+    case "none":
       return;
-    case 'light':
+    case "light":
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       return;
-    case 'medium':
+    case "medium":
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       return;
-    case 'selection':
+    case "selection":
       void Haptics.selectionAsync();
       return;
-    case 'success':
+    case "success":
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       return;
-    case 'warning':
+    case "warning":
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
   }

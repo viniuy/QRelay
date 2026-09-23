@@ -25,6 +25,7 @@
     "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
+    "expo-updates": "~57.0.23",
     "fflate": "^0.8.3",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
