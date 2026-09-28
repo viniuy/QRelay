@@ -1,9 +1,9 @@
 import { router } from 'expo-router';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
-import { openFile, shareFile } from '@/files/files';
+import { exportCopy, openFile, shareFile } from '@/files/files';
 import { useReceive } from '@/state/receive';
 import { Button } from '@/ui/components/Button';
 import { Checkmark } from '@/ui/components/Checkmark';
@@ -36,6 +36,16 @@ export default function Done() {
     }
   };
 
+  const saveCopy = async () => {
+    if (!state.bytes || !saved) return;
+    try {
+      const outcome = await exportCopy(state.bytes, saved.name, mime);
+      if (outcome === 'saved') toast(`Saved ${saved.name}`);
+    } catch (e) {
+      toast(`Could not save. ${e instanceof Error ? e.message : ''}`.trim());
+    }
+  };
+
   return (
     <ScreenFrame
       showBack={false}
@@ -43,7 +53,18 @@ export default function Done() {
       actions={
         <>
           <Button label="Open" onPress={saved ? open : undefined} />
-          <Button label="Share or save to Files" kind="secondary" icon="share" onPress={saved ? share : undefined} />
+          {Platform.OS === 'android' ? (
+            <View style={styles.pair}>
+              <View style={{ flex: 1 }}>
+                <Button label="Save a copy" kind="secondary" onPress={saved ? saveCopy : undefined} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button label="Share" kind="secondary" icon="share" onPress={saved ? share : undefined} />
+              </View>
+            </View>
+          ) : (
+            <Button label="Share or save to Files" kind="secondary" icon="share" onPress={saved ? share : undefined} />
+          )}
           <Button label="Receive another" kind="ghost" onPress={() => router.replace('/receive/camera')} />
         </>
       }
@@ -68,4 +89,5 @@ export default function Done() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', paddingTop: 18 },
+  pair: { flexDirection: 'row', gap: 10 },
 });

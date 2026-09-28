@@ -8,15 +8,14 @@ import { usePalette } from '../theme';
 
 interface Props {
   count: number;
-  isSolved: (index: number) => boolean;
-  tick: number;
+  solved: Uint8Array;
 }
 
 const ANIMATED_MAX = 120;
 const CELLS_MAX = 480;
 const ROWS_MAX = 12;
 
-export function BlockGrid({ count, isSolved, tick }: Props) {
+export function BlockGrid({ count, solved }: Props) {
   const [width, setWidth] = useState(0);
   const layout = useMemo(() => layoutFor(count), [count]);
   const cell = width > 0 ? (width - layout.gap * (layout.columns - 1)) / layout.columns : 0;
@@ -27,11 +26,11 @@ export function BlockGrid({ count, isSolved, tick }: Props) {
       {width > 0 && count <= ANIMATED_MAX && (
         <View style={[styles.wrap, { gap: layout.gap }]}>
           {Array.from({ length: count }, (_, i) => (
-            <Cell key={i} size={cell} solved={isSolved(i)} />
+            <Cell key={i} size={cell} solved={solved[i] === 1} />
           ))}
         </View>
       )}
-      {width > 0 && count > ANIMATED_MAX && <PathGrid count={count} layout={layout} cell={cell} isSolved={isSolved} tick={tick} width={width} height={height} />}
+      {width > 0 && count > ANIMATED_MAX && <PathGrid count={count} layout={layout} cell={cell} solved={solved} width={width} height={height} />}
     </View>
   );
 }
@@ -65,7 +64,7 @@ const Cell = memo(function Cell({ size, solved }: { size: number; solved: boolea
   return <Animated.View style={[{ width: size, height: size, borderRadius: 1 }, style]} />;
 });
 
-function PathGrid({ count, layout, cell, isSolved, tick, width, height }: Props & { layout: Layout; cell: number; width: number; height: number }) {
+function PathGrid({ count, layout, cell, solved, width, height }: Props & { layout: Layout; cell: number; width: number; height: number }) {
   const c = usePalette();
   const { columns, gap, perCell, cells } = layout;
   const pitch = cell + gap;
@@ -87,18 +86,17 @@ function PathGrid({ count, layout, cell, isSolved, tick, width, height }: Props 
     for (let i = 0; i < cells; i++) {
       const start = i * perCell;
       const end = Math.min(count, start + perCell);
-      let solved = 0;
-      for (let b = start; b < end; b++) if (isSolved(b)) solved++;
-      if (solved === 0) continue;
-      const frac = solved / (end - start);
+      let done = 0;
+      for (let b = start; b < end; b++) done += solved[b] ?? 0;
+      if (done === 0) continue;
+      const frac = done / (end - start);
       const x = (i % columns) * pitch;
       const y = Math.floor(i / columns) * pitch;
       const h = cell * frac;
       parts.push(`M${x.toFixed(2)} ${(y + cell - h).toFixed(2)}h${cell.toFixed(2)}v${h.toFixed(2)}h${(-cell).toFixed(2)}z`);
     }
     return parts.join('');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tick, cells, perCell, count, columns, pitch, cell]);
+  }, [solved, cells, perCell, count, columns, pitch, cell]);
 
   return (
     <Svg width={width} height={height}>

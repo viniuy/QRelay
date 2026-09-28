@@ -26,7 +26,6 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.qrelay.app",
       "permissions": [
-        "android.permission.CAMERA",
         "android.permission.CAMERA"
       ]
     },

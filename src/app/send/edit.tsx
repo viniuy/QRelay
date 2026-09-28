@@ -5,7 +5,7 @@ import Animated, { FadeIn, FadeInDown, interpolateColor, useAnimatedStyle, useSh
 
 import { type EditOp, EditNotReady, type EditResult, opsFor, runEdit } from '@/features/edit/editService';
 import { type CompressLevel } from '@/features/edit/imageCodec';
-import { saveBytes } from '@/files/files';
+import { exportCopy } from '@/files/files';
 import { useSend } from '@/state/send';
 import { Button } from '@/ui/components/Button';
 import { badgeFor, BigTitle, FileCard, formatBytes, Gap, NoteBox, Sub } from '@/ui/components/parts';
@@ -60,11 +60,11 @@ export default function Edit() {
     }
   };
 
-  const saveCopy = () => {
+  const saveCopy = async () => {
     if (!file) return;
     try {
-      saveBytes(file.bytes, file.name, 'edited');
-      toast('Saved a copy in QRelay > edited');
+      const outcome = await exportCopy(file.bytes, file.name, file.mime);
+      if (outcome === 'saved') toast(`Saved ${file.name}`);
     } catch (e) {
       toast(`Could not save. ${e instanceof Error ? e.message : ''}`.trim());
     }
@@ -183,20 +183,22 @@ function OpTile({ icon, label, hint, selected, disabled, muted = false, onPress 
   }));
   const tick = useAnimatedStyle(() => ({ transform: [{ scale: check.value }] }));
   return (
-    <Press onPress={onPress} disabled={disabled} haptic="selection" accessibilityRole="checkbox" accessibilityState={{ checked: selected }} accessibilityLabel={label} style={styles.tileWrap}>
-      <Animated.View style={[styles.tile, { backgroundColor: c.paper2, shadowColor: '#000', opacity: muted ? 0.5 : 1 }, card]}>
-        <Icon name={icon} size={26} color={c.text} />
-        <View>
-          <Text style={sans(14, 600, { color: c.text })}>{label}</Text>
-          <Text style={sans(12, 400, { color: c.muted })} numberOfLines={1}>
-            {hint}
-          </Text>
-        </View>
-        <Animated.View style={[styles.check, { backgroundColor: c.ink }, tick]}>
-          <Icon name="check" size={12} color={c.paper} strokeWidth={2.6} />
+    <View style={styles.tileWrap}>
+      <Press onPress={onPress} disabled={disabled} haptic="selection" accessibilityRole="checkbox" accessibilityState={{ checked: selected }} accessibilityLabel={label}>
+        <Animated.View style={[styles.tile, { backgroundColor: c.paper2, shadowColor: '#000', opacity: muted ? 0.5 : 1 }, card]}>
+          <Icon name={icon} size={26} color={c.text} />
+          <View>
+            <Text style={sans(14, 600, { color: c.text })}>{label}</Text>
+            <Text style={sans(12, 400, { color: c.muted })} numberOfLines={1}>
+              {hint}
+            </Text>
+          </View>
+          <Animated.View style={[styles.check, { backgroundColor: c.ink }, tick]}>
+            <Icon name="check" size={12} color={c.paper} strokeWidth={2.6} />
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
     </Press>
+    </View>
   );
 }
 
@@ -251,8 +253,8 @@ function GrowBar({ fraction, color, delay }: { fraction: number; color: string; 
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tileWrap: { width: '48%', flexGrow: 1 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 },
+  tileWrap: { width: '48.5%' },
   tile: {
     borderWidth: 1.5,
     borderRadius: radius.card,

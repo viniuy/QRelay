@@ -40,6 +40,10 @@ export class ReceiverSession {
     return this.decoder?.isSolved(block) ?? false;
   }
 
+  solvedMap(): Uint8Array {
+    return this.decoder?.solvedMap() ?? new Uint8Array(0);
+  }
+
   feed(text: string): ScanEvent {
     let bytes: Uint8Array;
     try {

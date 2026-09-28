@@ -28,10 +28,9 @@ interface ReceiveState {
   saved: SavedFile | null;
   bytes: Uint8Array | null;
   error: string | null;
-  tick: number;
+  solvedMap: Uint8Array;
   reset: () => void;
   feed: (raw: string) => void;
-  isSolved: (block: number) => boolean;
 }
 
 let session = new ReceiverSession();
@@ -60,7 +59,7 @@ const initial = () => ({
   saved: null,
   bytes: null,
   error: null,
-  tick: 0,
+  solvedMap: new Uint8Array(0),
 });
 
 export const useReceive = create<ReceiveState>((set, get) => ({
@@ -75,8 +74,6 @@ export const useReceive = create<ReceiveState>((set, get) => ({
     publishTimer = null;
     set(initial());
   },
-
-  isSolved: (block) => session.isSolved(block),
 
   feed: (raw) => {
     const s = get();
@@ -103,6 +100,7 @@ export const useReceive = create<ReceiveState>((set, get) => ({
           label: sessionLabel(key.sessionId),
           blockCount: key.blockCount,
           blockSize: key.blockSize,
+          solvedMap: new Uint8Array(key.blockCount),
           needKeySeen: false,
         });
         return;
@@ -120,7 +118,7 @@ export const useReceive = create<ReceiveState>((set, get) => ({
             duplicates: session.duplicates,
             decodeFps: decodeTimes.length,
             dataStartedAt: prev.dataStartedAt ?? now,
-            tick: prev.solved === session.solvedCount ? prev.tick : prev.tick + 1,
+            solvedMap: prev.solved === session.solvedCount ? prev.solvedMap : session.solvedMap(),
           }));
         if (event === 'complete' || now - lastPublish > 90) {
           lastPublish = now;
@@ -173,17 +171,17 @@ async function finish(set: (partial: Partial<ReceiveState>) => void): Promise<vo
   }
 }
 
-export function etaSeconds(s: ReceiveState): number | null {
+export function etaSeconds(s: ReceiveState, now: number): number | null {
   if (s.dataStartedAt === null || s.solved < 2) return null;
-  const secs = (Date.now() - s.dataStartedAt) / 1000;
+  const secs = (now - s.dataStartedAt) / 1000;
   if (secs < 0.5) return null;
   const rate = s.solved / secs;
   return Math.ceil((s.blockCount - s.solved) / rate);
 }
 
-export function goodputBytesPerSecond(s: ReceiveState): number {
+export function goodputBytesPerSecond(s: ReceiveState, now: number): number {
   if (s.dataStartedAt === null || s.solved === 0) return 0;
-  const secs = ((s.finishedAt ?? Date.now()) - s.dataStartedAt) / 1000;
+  const secs = ((s.finishedAt ?? now) - s.dataStartedAt) / 1000;
   if (secs < 0.3) return 0;
   return (s.solved * s.blockSize) / secs;
 }

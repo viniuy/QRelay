@@ -40,7 +40,7 @@ export default function Camera() {
   const state = useReceive();
   const keepAwake = useSettings((s) => s.keepAwake);
   const lastPhase = useRef<ReceivePhase>("searching");
-  const [, forceTick] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   const active = state.phase !== "done" && state.phase !== "failed";
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function Camera() {
 
   useEffect(() => {
     if (state.phase !== "receiving" && state.phase !== "keyLocked") return;
-    const t = setInterval(() => forceTick((n) => n + 1), 500);
+    const t = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(t);
   }, [state.phase]);
 
@@ -106,7 +106,7 @@ export default function Camera() {
               ? "Done"
               : "Did not verify";
 
-  const eta = etaSeconds(state);
+  const eta = etaSeconds(state, now);
   const finishing = state.phase === "verifying" || state.phase === "done";
 
   return (
@@ -184,8 +184,7 @@ export default function Camera() {
         {state.blockCount > 0 && (
           <BlockGrid
             count={state.blockCount}
-            isSolved={state.isSolved}
-            tick={state.tick}
+            solved={state.solvedMap}
           />
         )}
       </View>
@@ -196,7 +195,7 @@ export default function Camera() {
         <StatCell label="dupes" value={`${state.duplicates}`} />
         <StatCell
           label="goodput"
-          value={`${(goodputBytesPerSecond(state) / 1024).toFixed(1)} KB/s`}
+          value={`${(goodputBytesPerSecond(state, now) / 1024).toFixed(1)} KB/s`}
         />
         <StatCell
           label="left"

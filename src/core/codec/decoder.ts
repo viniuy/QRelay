@@ -93,6 +93,12 @@ export class FountainDecoder {
     return this.solved[block] !== null;
   }
 
+  solvedMap(): Uint8Array {
+    const map = new Uint8Array(this.blockCount);
+    for (let i = 0; i < this.blockCount; i++) if (this.solved[i] !== null) map[i] = 1;
+    return map;
+  }
+
   add(seed: number, payload: Uint8Array): AddResult {
     if (payload.length !== this.blockSize) {
       throw new Error(`payload is ${payload.length} bytes, block size is ${this.blockSize}`);

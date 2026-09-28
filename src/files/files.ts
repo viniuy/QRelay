@@ -79,6 +79,29 @@ export function saveBytes(bytes: Uint8Array, name: string, sub: 'received' | 'ed
   return { uri: candidate.uri, name: candidate.name };
 }
 
+export type ExportResult = 'saved' | 'shared' | 'cancelled';
+
+export async function exportCopy(bytes: Uint8Array, name: string, mime: string): Promise<ExportResult> {
+  const safe = safeName(name);
+  if (Platform.OS === 'android') {
+    let dir: Directory;
+    try {
+      dir = await Directory.pickDirectoryAsync();
+    } catch {
+      return 'cancelled';
+    }
+    const file = dir.createFile(safe, mime);
+    file.write(bytes);
+    return 'saved';
+  }
+  const dir = new Directory(Paths.cache, `export-${Date.now()}`);
+  dir.create({ intermediates: true });
+  const file = new File(dir, safe);
+  file.write(bytes);
+  await shareFile(file.uri, mime);
+  return 'shared';
+}
+
 export function scratchFile(bytes: Uint8Array, ext: string): File {
   const file = new File(Paths.cache, `qrelay-${Date.now()}-${Math.floor(Math.random() * 1e6)}.${ext}`);
   file.write(bytes);
