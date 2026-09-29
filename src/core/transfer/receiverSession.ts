@@ -32,6 +32,10 @@ export class ReceiverSession {
     return this.decoder?.solvedCount ?? 0;
   }
 
+  get pendingCount(): number {
+    return this.decoder?.pendingCount ?? 0;
+  }
+
   get blockCount(): number {
     return this.key?.blockCount ?? 0;
   }

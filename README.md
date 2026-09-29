@@ -157,7 +157,7 @@ The stream runs in cycles of `K + ceil(0.35 K)` frames. The first K frames of a 
 
 | Milestone | State |
 | --- | --- |
-| M1 Codec | done, 36 tests |
+| M1 Codec | done, 37 tests |
 | M2 Send and Receive | on phones, in client testing |
 | M3 Edit | three of six operations |
 | M4 Motion, dark mode | in; screen reader pass pending |

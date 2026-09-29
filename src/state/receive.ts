@@ -17,6 +17,7 @@ interface ReceiveState {
   blockCount: number;
   blockSize: number;
   solved: number;
+  pending: number;
   frames: number;
   duplicates: number;
   decodeFps: number;
@@ -48,6 +49,7 @@ const initial = () => ({
   blockCount: 0,
   blockSize: 0,
   solved: 0,
+  pending: 0,
   frames: 0,
   duplicates: 0,
   decodeFps: 0,
@@ -114,6 +116,7 @@ export const useReceive = create<ReceiveState>((set, get) => ({
           set((prev) => ({
             phase: event === 'complete' ? 'verifying' : 'receiving',
             solved: session.solvedCount,
+            pending: session.pendingCount,
             frames: session.framesSeen,
             duplicates: session.duplicates,
             decodeFps: decodeTimes.length,
@@ -172,16 +175,23 @@ async function finish(set: (partial: Partial<ReceiveState>) => void): Promise<vo
 }
 
 export function etaSeconds(s: ReceiveState, now: number): number | null {
-  if (s.dataStartedAt === null || s.solved < 2) return null;
+  const recovered = Math.min(s.blockCount, s.solved + s.pending);
+  if (s.dataStartedAt === null || recovered < 2) return null;
   const secs = (now - s.dataStartedAt) / 1000;
   if (secs < 0.5) return null;
-  const rate = s.solved / secs;
-  return Math.ceil((s.blockCount - s.solved) / rate);
+  const rate = recovered / secs;
+  return Math.ceil((s.blockCount - recovered) / rate);
 }
 
 export function goodputBytesPerSecond(s: ReceiveState, now: number): number {
-  if (s.dataStartedAt === null || s.solved === 0) return 0;
+  const recovered = Math.min(s.blockCount, s.solved + s.pending);
+  if (s.dataStartedAt === null || recovered === 0) return 0;
   const secs = ((s.finishedAt ?? now) - s.dataStartedAt) / 1000;
   if (secs < 0.3) return 0;
-  return (s.solved * s.blockSize) / secs;
+  return (recovered * s.blockSize) / secs;
+}
+
+export function repairFraction(s: ReceiveState): number {
+  const holes = s.blockCount - s.solved;
+  return holes <= 0 ? 0 : Math.min(1, s.pending / holes);
 }

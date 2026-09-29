@@ -9,13 +9,14 @@ import { usePalette } from '../theme';
 interface Props {
   count: number;
   solved: Uint8Array;
+  repair: number;
 }
 
 const ANIMATED_MAX = 120;
 const CELLS_MAX = 480;
 const ROWS_MAX = 12;
 
-export function BlockGrid({ count, solved }: Props) {
+export function BlockGrid({ count, solved, repair }: Props) {
   const [width, setWidth] = useState(0);
   const layout = useMemo(() => layoutFor(count), [count]);
   const cell = width > 0 ? (width - layout.gap * (layout.columns - 1)) / layout.columns : 0;
@@ -26,11 +27,11 @@ export function BlockGrid({ count, solved }: Props) {
       {width > 0 && count <= ANIMATED_MAX && (
         <View style={[styles.wrap, { gap: layout.gap }]}>
           {Array.from({ length: count }, (_, i) => (
-            <Cell key={i} size={cell} solved={solved[i] === 1} />
+            <Cell key={i} size={cell} solved={solved[i] === 1} repair={repair} />
           ))}
         </View>
       )}
-      {width > 0 && count > ANIMATED_MAX && <PathGrid count={count} layout={layout} cell={cell} solved={solved} width={width} height={height} />}
+      {width > 0 && count > ANIMATED_MAX && <PathGrid count={count} layout={layout} cell={cell} solved={solved} repair={repair} width={width} height={height} />}
     </View>
   );
 }
@@ -51,20 +52,29 @@ function layoutFor(count: number): Layout {
   return { columns, rows, gap: cells <= 120 ? 2 : 1, perCell, cells };
 }
 
-const Cell = memo(function Cell({ size, solved }: { size: number; solved: boolean }) {
+const Cell = memo(function Cell({ size, solved, repair }: { size: number; solved: boolean; repair: number }) {
   const c = usePalette();
   const t = useSharedValue(solved ? 1 : 0);
+  const r = useSharedValue(0);
   useEffect(() => {
     if (solved) t.value = withTiming(1, OVERSHOOT);
   }, [solved, t]);
+  useEffect(() => {
+    r.value = withTiming(solved ? 0 : repair, { duration: 200 });
+  }, [solved, repair, r]);
   const style = useAnimatedStyle(() => ({
     transform: [{ scale: 0.7 + 0.3 * t.value }],
     backgroundColor: t.value > 0.5 ? c.lock : c.paper4,
   }));
-  return <Animated.View style={[{ width: size, height: size, borderRadius: 1 }, style]} />;
+  const pending = useAnimatedStyle(() => ({ height: `${r.value * 100}%` }));
+  return (
+    <Animated.View style={[{ width: size, height: size, borderRadius: 1, overflow: 'hidden', justifyContent: 'flex-end' }, style]}>
+      <Animated.View style={[{ width: '100%', backgroundColor: c.lock, opacity: 0.4 }, pending]} />
+    </Animated.View>
+  );
 });
 
-function PathGrid({ count, layout, cell, solved, width, height }: Props & { layout: Layout; cell: number; width: number; height: number }) {
+function PathGrid({ count, layout, cell, solved, repair, width, height }: Props & { layout: Layout; cell: number; width: number; height: number }) {
   const c = usePalette();
   const { columns, gap, perCell, cells } = layout;
   const pitch = cell + gap;
@@ -98,9 +108,29 @@ function PathGrid({ count, layout, cell, solved, width, height }: Props & { layo
     return parts.join('');
   }, [solved, cells, perCell, count, columns, pitch, cell]);
 
+  const pending = useMemo(() => {
+    if (repair <= 0) return '';
+    const parts: string[] = [];
+    for (let i = 0; i < cells; i++) {
+      const start = i * perCell;
+      const end = Math.min(count, start + perCell);
+      let done = 0;
+      for (let b = start; b < end; b++) done += solved[b] ?? 0;
+      const open = 1 - done / (end - start);
+      if (open === 0) continue;
+      const x = (i % columns) * pitch;
+      const y = Math.floor(i / columns) * pitch;
+      const h = cell * open * repair;
+      const top = y + cell * open - h;
+      parts.push(`M${x.toFixed(2)} ${top.toFixed(2)}h${cell.toFixed(2)}v${h.toFixed(2)}h${(-cell).toFixed(2)}z`);
+    }
+    return parts.join('');
+  }, [repair, solved, cells, perCell, count, columns, pitch, cell]);
+
   return (
     <Svg width={width} height={height}>
       <Path d={bed} fill={c.paper4} />
+      <Path d={pending} fill={c.lock} fillOpacity={0.4} />
       <Path d={fill} fill={c.lock} />
     </Svg>
   );

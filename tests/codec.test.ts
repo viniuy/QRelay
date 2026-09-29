@@ -265,3 +265,30 @@ describe('fountain round trip', () => {
     expect(used).toBeLessThanOrEqual(k + 6);
   });
 });
+
+describe('repair progress', () => {
+  it('counts every useful repair frame and finishes when the count reaches the holes', () => {
+    const data = randomData(80 * 64, 11);
+    const encoder = new FountainEncoder(data, 64);
+    const k = encoder.blockCount;
+    const decoder = new FountainDecoder(k, 64);
+    for (let seed = 0; seed < k; seed++) if (seed % 4 !== 0) decoder.add(seed, encoder.payloadFor(seed));
+    const holes = decoder.unsolvedCount;
+    expect(holes).toBe(20);
+
+    let recovered = decoder.solvedCount + decoder.pendingCount;
+    let seed = k;
+    while (!decoder.isComplete && seed < k * 4) {
+      decoder.add(seed, encoder.payloadFor(seed));
+      seed++;
+      const now = decoder.solvedCount + decoder.pendingCount;
+      if (!decoder.isComplete) {
+        expect(now).toBeGreaterThanOrEqual(recovered);
+        expect(decoder.pendingCount).toBeLessThan(decoder.unsolvedCount);
+      }
+      recovered = now;
+    }
+    expect(decoder.isComplete).toBe(true);
+    expect(seed - k).toBeLessThanOrEqual(holes + 6);
+  });
+});

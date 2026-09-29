@@ -16,6 +16,7 @@ import Animated, {
 import {
   etaSeconds,
   goodputBytesPerSecond,
+  repairFraction,
   type ReceivePhase,
   useReceive,
 } from "@/state/receive";
@@ -99,7 +100,9 @@ export default function Camera() {
         : state.phase === "receiving"
           ? state.otherSessionSeen
             ? "Receiving · ignoring another sender"
-            : "Receiving"
+            : state.pending > 0
+              ? `Repairing · ${state.pending} of ${state.blockCount - state.solved} missing`
+              : "Receiving"
           : state.phase === "verifying"
             ? "Verifying SHA-256"
             : state.phase === "done"
@@ -185,6 +188,7 @@ export default function Camera() {
           <BlockGrid
             count={state.blockCount}
             solved={state.solvedMap}
+            repair={repairFraction(state)}
           />
         )}
       </View>
