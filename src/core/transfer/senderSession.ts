@@ -1,9 +1,21 @@
-import { base45Encode } from '../codec/base45';
-import { FountainEncoder } from '../codec/encoder';
-import { encodeDataFrame, encodeKeyFrame, KeyFrame, SESSION_ID_LENGTH, sessionLabel } from '../codec/framing';
-import { packAsync, type Packed, packSync } from '../codec/pack';
-import { randomBytes, seal, type SealedFile, sealWithHash, sha256Async } from '../crypto/sessionCrypto';
-import { Preset } from './presets';
+import { base45Encode } from "../codec/base45";
+import { FountainEncoder } from "../codec/encoder";
+import {
+  encodeDataFrame,
+  encodeKeyFrame,
+  KeyFrame,
+  SESSION_ID_LENGTH,
+  sessionLabel,
+} from "../codec/framing";
+import { packAsync, type Packed, packSync } from "../codec/pack";
+import {
+  randomBytes,
+  seal,
+  type SealedFile,
+  sealWithHash,
+  sha256Async,
+} from "../crypto/sessionCrypto";
+import { Preset } from "./presets";
 
 export interface SourceFile {
   bytes: Uint8Array;
@@ -11,7 +23,7 @@ export interface SourceFile {
   mime: string;
 }
 
-export type PrepareStep = 'packing' | 'hashing' | 'encrypting';
+export type PrepareStep = "packing" | "hashing" | "encrypting";
 export type PrepareProgress = (step: PrepareStep, fraction: number) => void;
 
 export class SenderSession {
@@ -19,7 +31,12 @@ export class SenderSession {
   readonly encoder: FountainEncoder;
   readonly keyBytes: Uint8Array;
 
-  private constructor(file: SourceFile, packed: Packed, sealed: SealedFile, readonly preset: Preset) {
+  private constructor(
+    file: SourceFile,
+    packed: Packed,
+    sealed: SealedFile,
+    readonly preset: Preset,
+  ) {
     this.encoder = new FountainEncoder(sealed.cipher, preset.blockSize);
     this.keyFrame = {
       sessionId: randomBytes(SESSION_ID_LENGTH),
@@ -37,20 +54,32 @@ export class SenderSession {
     this.keyBytes = encodeKeyFrame(this.keyFrame);
   }
 
-  static async create(file: SourceFile, preset: Preset, onProgress?: PrepareProgress, packed?: Packed): Promise<SenderSession> {
-    const p = packed ?? (await packAsync(file.bytes, (f) => onProgress?.('packing', f)));
-    onProgress?.('hashing', 0);
+  static async create(
+    file: SourceFile,
+    preset: Preset,
+    onProgress?: PrepareProgress,
+    packed?: Packed,
+  ): Promise<SenderSession> {
+    const p =
+      packed ??
+      (await packAsync(file.bytes, (f) => onProgress?.("packing", f)));
+    onProgress?.("hashing", 0);
     const hash = await sha256Async(file.bytes);
-    onProgress?.('encrypting', 0);
+    onProgress?.("encrypting", 0);
     await new Promise((resolve) => setTimeout(resolve, 16));
     const sealed = sealWithHash(p.bytes, hash);
-    onProgress?.('encrypting', 1);
+    onProgress?.("encrypting", 1);
     return new SenderSession(file, p, sealed, preset);
   }
 
   static createSync(file: SourceFile, preset: Preset): SenderSession {
     const packed = packSync(file.bytes);
-    return new SenderSession(file, packed, seal(packed.bytes, file.bytes), preset);
+    return new SenderSession(
+      file,
+      packed,
+      seal(packed.bytes, file.bytes),
+      preset,
+    );
   }
 
   get blockCount(): number {

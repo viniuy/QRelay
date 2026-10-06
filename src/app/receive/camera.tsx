@@ -16,8 +16,8 @@ import Animated, {
 import {
   etaSeconds,
   goodputBytesPerSecond,
-  repairFraction,
   type ReceivePhase,
+  repairFraction,
   useReceive,
 } from "@/state/receive";
 import { useSettings } from "@/state/settings";
