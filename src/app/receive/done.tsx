@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
-import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback } from 'react';
+import { BackHandler, Platform, StyleSheet, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { exportCopy, openFile, shareFile } from '@/files/files';
@@ -17,6 +17,21 @@ export default function Done() {
   const saved = state.saved;
   const mime = state.mime ?? 'application/octet-stream';
   const seconds = state.finishedAt ? (state.finishedAt - state.startedAt) / 1000 : 0;
+
+  const goHome = useCallback(() => {
+    router.dismissAll();
+    router.replace('/');
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        goHome();
+        return true;
+      });
+      return () => sub.remove();
+    }, [goHome]),
+  );
 
   const open = async () => {
     if (!saved) return;
@@ -48,7 +63,7 @@ export default function Done() {
 
   return (
     <ScreenFrame
-      showBack={false}
+      onBack={goHome}
       still
       actions={
         <>
@@ -65,7 +80,14 @@ export default function Done() {
           ) : (
             <Button label="Share or save to Files" kind="secondary" icon="share" onPress={saved ? share : undefined} />
           )}
-          <Button label="Receive another" kind="ghost" onPress={() => router.replace('/receive/camera')} />
+          <View style={styles.pair}>
+            <View style={{ flex: 1 }}>
+              <Button label="Receive another" kind="ghost" onPress={() => router.replace('/receive/camera')} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button label="Home" kind="ghost" onPress={goHome} />
+            </View>
+          </View>
         </>
       }
     >
