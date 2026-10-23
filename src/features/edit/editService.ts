@@ -1,8 +1,10 @@
 import { PDFDocument } from 'pdf-lib';
 
 import { mimeFor, type PickedFile, pickFiles } from '../../files/files';
+import { docxToPdf, DocxUnreadable } from './docxToPdf';
 import { type CompressLevel, IMAGE_LEVELS, PDF_LEVELS, recodeToJpeg } from './imageCodec';
 import { compressPdf } from './pdfCompress';
+import { PdfHasNoText, pdfToDocx } from './pdfToDocx';
 
 export type EditOp = 'merge' | 'compress' | 'pdfToWord' | 'wordToPdf' | 'imageToPdf' | 'imageToWord';
 
@@ -24,8 +26,8 @@ export const EDIT_OPS: readonly EditOpInfo[] = [
   { id: 'compress', label: 'Compress', hint: 'Smaller file, fewer frames', action: 'Compress', accepts: (m) => isImage(m) || isPdf(m), available: true },
   { id: 'merge', label: 'Merge PDFs', hint: 'Add PDFs after this one', action: 'Pick the PDFs to add', accepts: isPdf, available: true },
   { id: 'imageToPdf', label: 'Image to PDF', hint: 'One A4 page', action: 'Make a PDF', accepts: isImage, available: true },
-  { id: 'pdfToWord', label: 'PDF to Word', hint: 'Text, headings, images', action: 'Convert to Word', accepts: isPdf, available: false, why: 'Not in this build yet' },
-  { id: 'wordToPdf', label: 'Word to PDF', hint: 'Fixed layout, any device', action: 'Convert to PDF', accepts: isWord, available: false, why: 'Not in this build yet' },
+  { id: 'pdfToWord', label: 'PDF to Word', hint: 'Text and headings', action: 'Convert to Word', accepts: isPdf, available: true },
+  { id: 'wordToPdf', label: 'Word to PDF', hint: 'Fixed layout, any device', action: 'Convert to PDF', accepts: isWord, available: true },
   { id: 'imageToWord', label: 'Image to Word', hint: 'Reads the text (OCR)', action: 'Read the text', accepts: isImage, available: false, why: 'Not in this build yet' },
 ];
 
@@ -74,6 +76,10 @@ export async function runEdit(op: EditOp, input: PickedFile, options: EditOption
       if (picked.kind !== 'picked') return null;
       return mergePdfs([input, ...picked.files], onProgress);
     }
+    case 'wordToPdf':
+      return wordToPdf(input, onProgress);
+    case 'pdfToWord':
+      return pdfToWord(input, onProgress);
     default:
       throw new EditNotReady(`${info.label} needs the full build with the document engine.`);
   }
@@ -134,6 +140,49 @@ export async function mergePdfs(sources: PickedFile[], onProgress?: EditProgress
     delta: `${pages} pages`,
     note: `${sources.map((s) => s.name).join(', ')}, in that order.`,
     before: sources.reduce((a, s) => a + s.bytes.length, 0),
+  };
+}
+
+async function wordToPdf(input: PickedFile, onProgress?: EditProgress): Promise<EditResult> {
+  if (ext(input.name) === 'doc' || input.mime === 'application/msword') throw new EditNotReady('Old .doc files cannot be read here. Save it as .docx in Word first.');
+  onProgress?.('Reading the document', 0.15);
+  let report;
+  try {
+    report = await docxToPdf(input.bytes, stem(input.name));
+  } catch (e) {
+    if (e instanceof DocxUnreadable) throw new EditNotReady(e.message);
+    throw e;
+  }
+  onProgress?.('Done', 1);
+  const lost = [
+    report.skippedImages > 0 ? `${report.skippedImages} image${report.skippedImages === 1 ? '' : 's'} left out (only PNG and JPEG outside tables are kept)` : '',
+    report.replacedChars > 0 ? `${report.replacedChars} character${report.replacedChars === 1 ? '' : 's'} outside Latin script shown as ?` : '',
+  ].filter(Boolean);
+  return {
+    file: { name: `${stem(input.name)}.pdf`, mime: 'application/pdf', bytes: report.bytes },
+    line: `${report.paragraphs} paragraphs → ${report.pages} page${report.pages === 1 ? '' : 's'}`,
+    delta: 'PDF',
+    note: `Text, headings, lists, tables and images kept; the font becomes Helvetica. Headers, footers and text boxes are dropped.${lost.length > 0 ? ` ${lost.join('; ')}.` : ''}`,
+    before: input.bytes.length,
+  };
+}
+
+async function pdfToWord(input: PickedFile, onProgress?: EditProgress): Promise<EditResult> {
+  onProgress?.('Reading the text', 0.15);
+  let report;
+  try {
+    report = await pdfToDocx(input.bytes);
+  } catch (e) {
+    if (e instanceof PdfHasNoText) throw new EditNotReady(e.message);
+    throw e;
+  }
+  onProgress?.('Done', 1);
+  return {
+    file: { name: `${stem(input.name)}.docx`, mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', bytes: report.bytes },
+    line: `${report.pages} page${report.pages === 1 ? '' : 's'} → ${report.paragraphs} paragraphs`,
+    delta: 'DOCX',
+    note: `Text and headings come across as editable paragraphs. Images, tables and exact layout stay in the PDF.${report.emptyPages > 0 ? ` ${report.emptyPages} page${report.emptyPages === 1 ? ' has' : 's have'} no text layer (scanned) and came out empty.` : ''}`,
+    before: input.bytes.length,
   };
 }
 
