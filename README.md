@@ -71,7 +71,9 @@ You need two phones for a transfer: one sends, one receives. Any mix of iPhone a
 | Compress PDFs | Yes. Re-encodes the images inside; text and drawings stay sharp |
 | Photo to PDF | Yes. Fitted to an A4 page |
 | Merge PDFs | Yes. Or pick several PDFs at once on the Send screen |
-| PDF to Word, Word to PDF, photo to Word (OCR) | Planned. Needs the full native build |
+| Word to PDF | Yes, for .docx. Keeps headings, lists, tables and PNG/JPEG images; the font becomes Helvetica |
+| PDF to Word | Yes. Text and headings only; scanned PDFs have no text to pull out |
+| Photo to Word (OCR) | Planned. Needs the full native build |
 
 ---
 
