@@ -1,0 +1,1 @@
+QRelay sends a file from one phone to another as a stream of QR codes, 10 a second. No Wi-Fi, no Bluetooth, no data, no account. It's encrypted, checked with SHA-256, and it works in airplane mode.
