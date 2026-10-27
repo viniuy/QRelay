@@ -65,6 +65,28 @@ describe('Word to PDF', () => {
     expect(back.headings).toBeGreaterThanOrEqual(1);
   });
 
+  it('takes heading looks from styles.xml, through basedOn and past tracked formatting changes', async () => {
+    const styles = `<w:styles ${W}>
+      <w:docDefaults><w:rPrDefault><w:rPr><w:sz w:val="22"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="160" w:line="259" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>
+      <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>
+      <w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:before="240" w:after="0"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:color w:val="2F5496"/><w:sz w:val="32"/></w:rPr></w:style>
+      <w:style w:type="paragraph" w:customStyle="1" w:styleId="Chapter"><w:name w:val="Chapter Heading"/><w:basedOn w:val="Heading1"/></w:style>
+    </w:styles>`;
+    const body = [
+      p('Chapter one', '<w:pStyle w:val="Chapter"/>'),
+      p('Body text under the chapter.'),
+      p('Edited heading', '<w:pStyle w:val="Heading1"/><w:pPrChange w:id="1" w:author="a"><w:pPr><w:pStyle w:val="Normal"/></w:pPr></w:pPrChange>'),
+      p('More body text.'),
+    ].join('');
+    const zip = unzipSync(docx(body));
+    zip['word/styles.xml'] = strToU8(styles);
+    const report = await docxToPdf(zipSync(zip));
+    const xml = documentText((await pdfToDocx(report.bytes)).bytes);
+    expect(xml.match(/<w:pStyle w:val="Heading1"\/>/g)).toHaveLength(2);
+    expect(xml).toMatch(/Heading1"\/>[^]*?Chapter one/);
+    expect(xml).toMatch(/Heading1"\/>[^]*?Edited heading/);
+  });
+
   it('counts characters the PDF font cannot draw', async () => {
     const report = await docxToPdf(docx(p('Hello Привет — “quotes”')));
     expect(report.replacedChars).toBe(6);
