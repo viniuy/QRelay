@@ -26,7 +26,7 @@ export const EDIT_OPS: readonly EditOpInfo[] = [
   { id: 'compress', label: 'Compress', hint: 'Smaller file, fewer frames', action: 'Compress', accepts: (m) => isImage(m) || isPdf(m), available: true },
   { id: 'merge', label: 'Merge PDFs', hint: 'Add PDFs after this one', action: 'Pick the PDFs to add', accepts: isPdf, available: true },
   { id: 'imageToPdf', label: 'Image to PDF', hint: 'One A4 page', action: 'Make a PDF', accepts: isImage, available: true },
-  { id: 'pdfToWord', label: 'PDF to Word', hint: 'Text and headings', action: 'Convert to Word', accepts: isPdf, available: true },
+  { id: 'pdfToWord', label: 'PDF to Word', hint: 'Text, pictures and layout', action: 'Convert to Word', accepts: isPdf, available: true },
   { id: 'wordToPdf', label: 'Word to PDF', hint: 'Fixed layout, any device', action: 'Convert to PDF', accepts: isWord, available: true },
   { id: 'imageToWord', label: 'Image to Word', hint: 'Reads the text (OCR)', action: 'Read the text', accepts: isImage, available: false, why: 'Not in this build yet' },
 ];
@@ -155,14 +155,14 @@ async function wordToPdf(input: PickedFile, onProgress?: EditProgress): Promise<
   }
   onProgress?.('Done', 1);
   const lost = [
-    report.skippedImages > 0 ? `${report.skippedImages} image${report.skippedImages === 1 ? '' : 's'} left out (only PNG and JPEG outside tables are kept)` : '',
+    report.skippedImages > 0 ? `${report.skippedImages} image${report.skippedImages === 1 ? '' : 's'} left out (only PNG and JPEG can be drawn)` : '',
     report.replacedChars > 0 ? `${report.replacedChars} character${report.replacedChars === 1 ? '' : 's'} outside Latin script shown as ?` : '',
   ].filter(Boolean);
   return {
     file: { name: `${stem(input.name)}.pdf`, mime: 'application/pdf', bytes: report.bytes },
     line: `${report.paragraphs} paragraphs → ${report.pages} page${report.pages === 1 ? '' : 's'}`,
     delta: 'PDF',
-    note: `Text, headings, lists, tables and images kept; the font becomes Helvetica. Headers, footers and text boxes are dropped.${lost.length > 0 ? ` ${lost.join('; ')}.` : ''}`,
+    note: `Styles, lists, tables, images, headers and footers kept. Fonts become the closest of Helvetica, Times or Courier.${lost.length > 0 ? ` ${lost.join('; ')}.` : ''}`,
     before: input.bytes.length,
   };
 }
@@ -181,7 +181,7 @@ async function pdfToWord(input: PickedFile, onProgress?: EditProgress): Promise<
     file: { name: `${stem(input.name)}.docx`, mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', bytes: report.bytes },
     line: `${report.pages} page${report.pages === 1 ? '' : 's'} → ${report.paragraphs} paragraphs`,
     delta: 'DOCX',
-    note: `Text and headings come across as editable paragraphs. Images, tables and exact layout stay in the PDF.${report.emptyPages > 0 ? ` ${report.emptyPages} page${report.emptyPages === 1 ? ' has' : 's have'} no text layer (scanned) and came out empty.` : ''}`,
+    note: `Fonts, sizes, colours, pictures, shading and spacing come across. Table columns become tab stops.${report.emptyPages > 0 ? ` ${report.emptyPages} page${report.emptyPages === 1 ? ' has' : 's have'} nothing to carry over and came out empty.` : ''}`,
     before: input.bytes.length,
   };
 }

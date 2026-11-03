@@ -1,10 +1,27 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
-import { PDFDocument, PDFName, StandardFonts } from 'pdf-lib';
+import { decodePDFRawStream, PDFArray, PDFDocument, PDFName, PDFRawStream, rgb, StandardFonts } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 
 import { docxToPdf, DocxUnreadable } from '../src/features/edit/docxToPdf';
 import { pngFromScanlines } from '../src/features/edit/imageBytes';
 import { parseCMap, PdfHasNoText, pdfToDocx } from '../src/features/edit/pdfToDocx';
+import { sampleDocx } from './fixtures/sampleDocx';
+
+function png4(): Uint8Array {
+  const scanlines = new Uint8Array(4 * (1 + 4 * 3)).fill(200);
+  for (let row = 0; row < 4; row++) scanlines[row * 13] = 0;
+  return pngFromScanlines(scanlines, 4, 4, 3);
+}
+
+// Stroked lines on the first page, which is how table borders and rules are drawn.
+async function strokes(bytes: Uint8Array): Promise<number> {
+  const doc = await PDFDocument.load(bytes);
+  const contents = doc.getPage(0).node.Contents();
+  const streams = contents instanceof PDFArray ? contents.asArray().map((r) => doc.context.lookup(r)) : [contents];
+  let ops = '';
+  for (const s of streams) if (s instanceof PDFRawStream) ops += strFromU8(decodePDFRawStream(s).decode());
+  return (ops.match(/\sl\s+S\s/g) ?? []).length;
+}
 
 const W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"';
 
@@ -26,6 +43,17 @@ const p = (text: string, pPr = '', rPr = '') => `<w:p><w:pPr>${pPr}</w:pPr><w:r>
 
 function documentText(bytes: Uint8Array): string {
   return strFromU8(unzipSync(bytes)['word/document.xml']);
+}
+
+function paragraphWith(xml: string, text: string): string {
+  return xml.split('<w:p>').find((para) => para.includes(`>${text}`)) ?? '';
+}
+
+function plain(xml: string): string {
+  return xml
+    .split('<w:p>')
+    .map((para) => para.replace(/<w:tab\/>/g, '\t').replace(/<[^>]+>/g, ''))
+    .join('\n');
 }
 
 describe('Word to PDF', () => {
@@ -60,8 +88,8 @@ describe('Word to PDF', () => {
     for (const s of ['Quarterly report', 'Revenue &amp; costs', 'First point', 'Second point', 'Region', 'North', '1,200', 'Appendix after the break']) expect(xml).toContain(s);
     expect(xml).toContain('The quick brown fox jumps over the lazy dog. The quick brown fox');
     expect(xml).not.toContain('deleted words');
-    expect(xml).toMatch(/<w:pStyle w:val="Heading1"\/><\/w:pPr>(<w:r><w:br w:type="page"\/><\/w:r>)?<w:r><w:rPr><\/w:rPr><w:t xml:space="preserve">Quarterly report/);
-    expect(xml).toContain('<w:br w:type="page"/>');
+    expect(paragraphWith(xml, 'Quarterly report')).toContain('<w:pStyle w:val="Heading1"/>');
+    expect(paragraphWith(xml, 'Appendix after the break')).toContain('<w:pageBreakBefore/>');
     expect(back.headings).toBeGreaterThanOrEqual(1);
   });
 
@@ -92,6 +120,33 @@ describe('Word to PDF', () => {
     expect(report.replacedChars).toBe(6);
   });
 
+  it('draws the peso sign instead of a question mark', async () => {
+    const report = await docxToPdf(docx(p('Total ₱1,200.00')));
+    expect(report.replacedChars).toBe(0);
+    expect(plain(documentText((await pdfToDocx(report.bytes)).bytes))).toContain('Total P1,200.00');
+  });
+
+  it('keeps headers, footers, page numbers and tab stops, and hides hidden text', async () => {
+    const report = await docxToPdf(sampleDocx(png4()));
+    expect(report.pages).toBe(2);
+    expect(report.images).toBe(1);
+    expect(report.replacedChars).toBe(0);
+    const text = plain(documentText((await pdfToDocx(report.bytes)).bytes));
+    expect(text).toContain('Acme Holdings · Confidential');
+    expect(text).toContain('Page 1 of 2');
+    expect(text).toContain('Page 2 of 2');
+    expect(text).toContain('Finance Analyst, Acme Holdings\tJan 2023 – Present');
+    expect(text).not.toContain('secret note');
+  });
+
+  it('draws table borders only where the table asks for them', async () => {
+    const row = '<w:tr><w:tc>' + p('A') + '</w:tc><w:tc>' + p('B') + '</w:tc></w:tr>';
+    const plainTable = await docxToPdf(docx(`<w:tbl><w:tblGrid><w:gridCol w:w="3000"/><w:gridCol w:w="3000"/></w:tblGrid>${row}</w:tbl>`));
+    const grid = await docxToPdf(docx(`<w:tbl><w:tblPr><w:tblStyle w:val="TableGrid"/></w:tblPr><w:tblGrid><w:gridCol w:w="3000"/><w:gridCol w:w="3000"/></w:tblGrid>${row}</w:tbl>`));
+    expect(await strokes(plainTable.bytes)).toBe(0);
+    expect(await strokes(grid.bytes)).toBeGreaterThanOrEqual(4);
+  });
+
   it('rejects files that are not .docx', async () => {
     await expect(docxToPdf(strToU8('not a zip at all'))).rejects.toBeInstanceOf(DocxUnreadable);
     await expect(docxToPdf(zipSync({ 'a.txt': strToU8('x') }))).rejects.toBeInstanceOf(DocxUnreadable);
@@ -103,13 +158,16 @@ describe('PDF to Word', () => {
     const doc = await PDFDocument.create();
     const font = await doc.embedFont(StandardFonts.Helvetica);
     const page = doc.addPage([595, 842]);
-    page.drawText('Line one of the first paragraph', { x: 72, y: 760, size: 11, font });
+    page.drawText('Line one of the first paragraph runs on long enough to reach the right margin and', { x: 72, y: 760, size: 11, font });
     page.drawText('continues here.', { x: 72, y: 746, size: 11, font });
     page.drawText('Second paragraph.', { x: 72, y: 700, size: 11, font });
+    page.drawText('A short line on its own', { x: 72, y: 686, size: 11, font });
     const report = await pdfToDocx(await doc.save());
     const xml = documentText(report.bytes);
-    expect(report.paragraphs).toBe(2);
-    expect(xml).toContain('Line one of the first paragraph continues here.');
+    // A line that stops well short of the margin was a hard break, so the next line starts a paragraph.
+    expect(report.paragraphs).toBe(3);
+    expect(xml).toContain('reach the right margin and continues here.');
+    expect(paragraphWith(xml, 'A short line on its own')).not.toContain('Second paragraph.');
     expect(xml.indexOf('Line one')).toBeLessThan(xml.indexOf('Second paragraph.'));
   });
 
@@ -134,15 +192,59 @@ endcmap CMapName currentdict /CMap defineresource pop end end`);
       'BT /F1 24 Tf 1 0 0 1 72 760 Tm',
       `<${hex('Heading')}> Tj ET`,
       'BT /F2 11 Tf 1 0 0 1 72 720 Tm',
-      `[<${hex('The')}> -230 <${hex('fi')}> 40 <${hex('rst')}> -250 <${hex('line')}>] TJ`,
+      `[<${hex('The')}> -230 <${hex('fi')}> 40 <${hex('rst')}> -250 <${hex('line runs on until it reaches the right margin of the page and keeps going and going')}>] TJ`,
       `0 -13.4 Td <${hex('goes on')}> Tj ET`,
     ].join('\n');
     page.node.set(PDFName.of('Contents'), ctx.register(ctx.flateStream(content)));
     const report = await pdfToDocx(await doc.save());
     const xml = documentText(report.bytes);
-    expect(xml).toContain('<w:pStyle w:val="Heading1"/></w:pPr><w:r><w:rPr></w:rPr><w:t xml:space="preserve">Heading</w:t>');
-    expect(xml).toContain('The first line goes on');
+    expect(paragraphWith(xml, 'Heading')).toMatch(/<w:pStyle w:val="Heading1"\/>[^]*<w:rFonts w:ascii="Calibri"[^]*<w:b\/>/);
+    expect(xml).toContain('The first line runs on until it reaches the right margin of the page and keeps going and going goes on');
     expect(report.paragraphs).toBe(2);
+  });
+
+  it('carries pictures, fonts, colours, alignment and page size across', async () => {
+    const doc = await PDFDocument.create();
+    const times = await doc.embedFont(StandardFonts.TimesRomanBold);
+    const helv = await doc.embedFont(StandardFonts.Helvetica);
+    const page = doc.addPage([612, 792]);
+    const title = 'Quarterly Billing';
+    page.drawText(title, { x: (612 - times.widthOfTextAtSize(title, 20)) / 2, y: 720, size: 20, font: times });
+    page.drawText('Overdue since March.', { x: 72, y: 690, size: 11, font: helv, color: rgb(1, 0, 0) });
+    page.drawImage(await doc.embedPng(png4()), { x: 72, y: 500, width: 160, height: 160 });
+    page.drawText('Signed below the picture.', { x: 72, y: 480, size: 11, font: helv });
+    const report = await pdfToDocx(await doc.save());
+    const zip = unzipSync(report.bytes);
+    const xml = strFromU8(zip['word/document.xml']);
+    expect(report.images).toBe(1);
+    expect(zip['word/media/image1.png']).toBeDefined();
+    expect(xml).toContain('<w:pgSz w:w="12240" w:h="15840"/>');
+    expect(paragraphWith(xml, title)).toContain('<w:jc w:val="center"/>');
+    expect(paragraphWith(xml, title)).toMatch(/w:ascii="Times New Roman"[^]*<w:b\/>/);
+    expect(paragraphWith(xml, 'Overdue since March.')).toContain('<w:color w:val="FF0000"/>');
+    expect(xml.indexOf('<wp:inline')).toBeGreaterThan(xml.indexOf('Overdue'));
+    expect(xml.indexOf('<wp:inline')).toBeLessThan(xml.indexOf('Signed below'));
+  });
+
+  it('keeps bold words, underlines, shaded bars and rules', async () => {
+    const doc = await PDFDocument.create();
+    const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+    const helv = await doc.embedFont(StandardFonts.Helvetica);
+    const page = doc.addPage([595, 842]);
+    page.drawText('Total due:', { x: 72, y: 760, size: 11, font: bold });
+    page.drawText('1,200.00', { x: 72 + bold.widthOfTextAtSize('Total due: ', 11), y: 760, size: 11, font: helv });
+    page.drawText('Read the terms', { x: 72, y: 730, size: 11, font: helv });
+    page.drawLine({ start: { x: 72, y: 728 }, end: { x: 72 + helv.widthOfTextAtSize('Read the terms', 11), y: 728 }, thickness: 0.6 });
+    page.drawRectangle({ x: 72, y: 690, width: 451, height: 20, color: rgb(0, 0, 0) });
+    page.drawText('Services Provided', { x: 250, y: 696, size: 11, font: bold, color: rgb(1, 1, 1) });
+    page.drawText('Line item', { x: 72, y: 660, size: 11, font: helv });
+    page.drawLine({ start: { x: 72, y: 652 }, end: { x: 523, y: 652 }, thickness: 1 });
+    const xml = documentText((await pdfToDocx(await doc.save())).bytes);
+    expect(paragraphWith(xml, 'Total due:')).toMatch(/<w:b\/>[^]*Total due:[^]*<w:r><w:rPr>(?:(?!<w:b\/>).)*?<\/w:rPr><w:t xml:space="preserve">1,200.00/);
+    expect(paragraphWith(xml, 'Read the terms')).toContain('<w:u w:val="single"/>');
+    expect(paragraphWith(xml, 'Services Provided')).toContain('<w:shd w:val="clear" w:color="auto" w:fill="000000"/>');
+    expect(paragraphWith(xml, 'Services Provided')).toContain('<w:color w:val="FFFFFF"/>');
+    expect(paragraphWith(xml, 'Line item')).toMatch(/<w:pBdr><w:bottom w:val="single"/);
   });
 
   it('says so when a PDF has no text layer', async () => {
