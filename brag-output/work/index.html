@@ -1,0 +1,470 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>QRelay brag</title>
+<style>
+@font-face { font-family: B; font-weight: 400; src: url(fonts/BricolageGrotesque-400.ttf); }
+@font-face { font-family: B; font-weight: 500; src: url(fonts/BricolageGrotesque-500.ttf); }
+@font-face { font-family: B; font-weight: 600; src: url(fonts/BricolageGrotesque-600.ttf); }
+@font-face { font-family: B; font-weight: 700; src: url(fonts/BricolageGrotesque-700.ttf); }
+@font-face { font-family: M; font-weight: 400; src: url(fonts/JetBrainsMono-400.ttf); }
+@font-face { font-family: M; font-weight: 500; src: url(fonts/JetBrainsMono-500.ttf); }
+@font-face { font-family: M; font-weight: 600; src: url(fonts/JetBrainsMono-600.ttf); }
+:root {
+  --paper: #F3F4F0; --paper2: #FFFFFF; --paper3: #E8EBE4; --paper4: #DCE0D8;
+  --ink: #131614; --muted: #66706A; --faint: #98A29B; --line: #D5D9D1; --line2: #BCC3BA;
+  --key: #E39A00; --keyInk: #8A5C00; --keySoft: #FFF0CF;
+  --lock: #159A5C; --lockInk: #0B6A3F; --lockSoft: #D8F3E3;
+  --bezel: #1A1D1B; --smuted: #7D857F; --control: #1C1C1C; --outline: #3A3A3A;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+#stage { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; font-family: B; color: var(--ink); }
+.abs { position: absolute; }
+.mono { font-family: M; font-variant-numeric: tabular-nums; }
+#paperbg { position: absolute; inset: 0; background: var(--paper); }
+
+/* hook */
+#qrHook { left: 250px; top: 290px; width: 500px; height: 500px; background: #fff; border-radius: 26px; padding: 30px; }
+#qrHook canvas { width: 440px; height: 440px; display: block; image-rendering: pixelated; }
+.hookLine { position: absolute; left: 880px; font: 700 136px/1 B; letter-spacing: -4px; color: #fff; white-space: nowrap; }
+
+/* reveal */
+#reveal { position: absolute; inset: 0; }
+#revealMark { position: absolute; left: 870px; top: 220px; width: 180px; height: 180px; }
+#revealWord { position: absolute; left: 0; right: 0; top: 440px; text-align: center; font: 600 156px/1 B; letter-spacing: -5px; }
+#revealTag { position: absolute; left: 0; right: 0; top: 660px; text-align: center; font: 400 58px/1.2 B; letter-spacing: -1px; color: var(--muted); }
+
+/* captions */
+.cap { position: absolute; width: 900px; }
+.cap .eb { font: 500 28px/1 M; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 28px; }
+.cap .tt { font: 600 98px/1.02 B; letter-spacing: -3px; }
+.cap .sb { font: 400 42px/1.3 B; color: var(--muted); margin-top: 28px; letter-spacing: -0.6px; }
+.cap span { display: block; }
+
+/* phone */
+.phone { position: absolute; width: 410px; height: 840px; border-radius: 60px; background: var(--bezel); padding: 15px; box-shadow: 0 40px 80px -30px rgba(19,22,20,.45), 0 8px 24px -8px rgba(19,22,20,.25); }
+.screen { position: relative; width: 380px; height: 810px; border-radius: 46px; overflow: hidden; background: var(--paper); }
+.scr { position: absolute; inset: 0; padding: 0 20px; background: var(--paper); }
+.status { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font: 600 15px/1 B; }
+.island { position: absolute; left: 50%; top: 11px; width: 108px; height: 30px; margin-left: -54px; border-radius: 16px; background: #000; z-index: 5; }
+.hdr { height: 52px; display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 8px; font: 600 16px/1 B; }
+.iconbtn { width: 38px; height: 38px; border-radius: 19px; background: var(--paper3); display: flex; align-items: center; justify-content: center; }
+.card { position: relative; padding: 18px; border-radius: 22px; border: 1.5px solid var(--line2); background: var(--paper2); margin-bottom: 12px; overflow: hidden; }
+.card.primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.card .ct { font: 600 21px/24px B; letter-spacing: -0.4px; margin-top: 22px; }
+.card .cs { font: 400 13px/1.3 B; color: var(--muted); margin-top: 3px; }
+.card.primary .cs { color: var(--paper); opacity: .72; }
+.eyebrow { font: 500 11px/1 M; letter-spacing: .9px; text-transform: uppercase; color: var(--muted); }
+.hrow { display: flex; align-items: center; gap: 12px; padding: 11px 0; }
+.hrow .d { width: 8px; height: 8px; border-radius: 4px; }
+.hrow .n { font: 600 14px/1.3 B; }
+.hrow .m { font: 400 11.5px/1.4 M; color: var(--muted); }
+.tag { padding: 5px 10px; border-radius: 999px; font: 500 11px/1.2 M; }
+.big { font: 600 30px/33px B; letter-spacing: -0.66px; }
+.sub { font: 400 14.5px/21px B; color: var(--muted); }
+.actions { position: absolute; left: 20px; right: 20px; bottom: 30px; display: flex; flex-direction: column; gap: 10px; }
+.btn { height: 52px; border-radius: 999px; display: flex; align-items: center; justify-content: center; gap: 8px; font: 600 16px/1 B; }
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.secondary { background: var(--paper3); color: var(--ink); }
+.btn.ghost { height: 44px; color: var(--ink); }
+.btn.onBlack { background: #fff; color: #000; }
+.btn.onBlackSec { background: var(--control); color: #fff; }
+.pair { display: flex; gap: 10px; }
+.pair > * { flex: 1; }
+.tlabel { font: 500 10px/1.3 M; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); }
+.tval { font: 500 13.5px/1.4 M; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ripple { position: absolute; width: 40px; height: 40px; border-radius: 50%; background: rgba(243,244,240,.35); }
+
+/* stream screen */
+#sStream { background: #000; color: #fff; }
+#streamQR { background: #fff; border-radius: 16px; padding: 14px; width: 340px; height: 340px; }
+#streamQR canvas { width: 312px; height: 312px; display: block; image-rendering: pixelated; }
+.tele { display: flex; flex-wrap: wrap; row-gap: 10px; margin-top: 16px; }
+.tele > div { width: 33.33%; }
+#sStream .tlabel { color: var(--smuted); }
+
+/* receiver */
+.vf { position: relative; height: 300px; border-radius: 16px; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #2a302c, #0c0f0d 75%); }
+.vfShot { position: absolute; left: 92px; top: 34px; width: 170px; height: 222px; border-radius: 18px; background: #050605; transform: rotate(-5deg); box-shadow: 0 0 40px rgba(255,255,255,.08); }
+.vfShot .q { position: absolute; left: 14px; top: 38px; width: 142px; height: 142px; background: #fff; border-radius: 6px; padding: 6px; }
+.vfShot canvas { width: 130px; height: 130px; display: block; filter: blur(.5px); }
+.corner { position: absolute; width: 34px; height: 34px; border-color: var(--lock); border-style: solid; border-width: 0; }
+.pill { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px; font: 500 12px/1 M; white-space: nowrap; }
+.pill .dt { width: 7px; height: 7px; border-radius: 4px; }
+.grid { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 10px; }
+.cell { position: relative; width: 12.2px; height: 12.2px; border-radius: 1px; overflow: hidden; background: var(--paper4); }
+.cell i { position: absolute; left: 0; right: 0; bottom: 0; background: var(--lock); opacity: .4; }
+.stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 16px; }
+.stat { background: var(--paper2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.filecard { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; background: var(--paper2); border: 1px solid var(--line); }
+.fileicon { width: 42px; height: 42px; border-radius: 10px; background: var(--paper3); display: flex; align-items: center; justify-content: center; font: 600 10px/1 M; color: var(--muted); }
+
+/* outro */
+#plane { position: absolute; left: 0; right: 0; top: 330px; text-align: center; }
+#planeIcon { width: 120px; height: 120px; border-radius: 60px; background: var(--keySoft); margin: 0 auto 44px; display: flex; align-items: center; justify-content: center; }
+#planeLine { font: 600 116px/1 B; letter-spacing: -3.5px; }
+#lockup { position: absolute; left: 0; right: 0; top: 380px; text-align: center; }
+#lockRow { display: inline-flex; align-items: center; gap: 36px; }
+#lockWord { font: 600 170px/1 B; letter-spacing: -5px; }
+#lockSub { font: 500 38px/1 M; color: var(--muted); margin-top: 52px; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="paperbg"></div>
+
+  <div id="hook" class="abs" style="inset:0">
+    <div id="qrHook" class="abs"><canvas id="cHook" width="53" height="53"></canvas></div>
+    <div class="hookLine" id="h1" style="top:300px">No Wi‑Fi.</div>
+    <div class="hookLine" id="h2" style="top:470px">No Bluetooth.</div>
+    <div class="hookLine" id="h3" style="top:640px; color:#37CF87">No data.</div>
+  </div>
+
+  <div id="reveal">
+    <svg id="revealMark" viewBox="0 0 34 34">
+      <rect x="1" y="1" width="32" height="32" rx="8" fill="#131614"/>
+      <rect x="7" y="7" width="8" height="8" rx="1.5" stroke="#F3F4F0" stroke-width="2" fill="none"/>
+      <rect x="10" y="10" width="2" height="2" fill="#F3F4F0"/>
+      <rect x="19" y="7" width="8" height="8" rx="1.5" stroke="#F3F4F0" stroke-width="2" fill="none"/>
+      <rect x="22" y="10" width="2" height="2" fill="#F3F4F0"/>
+      <rect x="7" y="19" width="8" height="8" rx="1.5" stroke="#F3F4F0" stroke-width="2" fill="none"/>
+      <rect x="10" y="22" width="2" height="2" fill="#F3F4F0"/>
+      <path id="markArrow" d="M19.5 26.5 27 19M21.5 19H27v5.5" stroke="#E39A00" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-dasharray="20"/>
+    </svg>
+    <div id="revealWord">QRelay</div>
+    <div id="revealTag">Phone to phone. Screen to camera.</div>
+  </div>
+
+  <div class="cap" id="cap1" style="left:150px; top:330px">
+    <span class="eb" style="color:var(--keyInk)">01 · Key</span>
+    <span class="tt">Show the key once.</span>
+    <span class="sb">A fresh AES‑256 key for every transfer</span>
+  </div>
+  <div class="cap" id="cap2" style="left:120px; top:300px; width:580px">
+    <span class="eb" style="color:var(--lockInk)">02 · Stream</span>
+    <span class="tt" style="font-size:90px">10 QR codes<br/>a second.</span>
+    <span class="sb">Missed frames come<br/>back on their own</span>
+  </div>
+  <div class="cap" id="cap3" style="left:150px; top:330px">
+    <span class="eb" style="color:var(--lockInk)">03 · Done</span>
+    <span class="tt">Checked before<br/>it's saved.</span>
+    <span class="sb">SHA‑256 against the sender's copy</span>
+  </div>
+
+  <!-- sender phone -->
+  <div class="phone" id="phA"><div class="screen"><div class="island"></div>
+    <div class="scr" id="sHome">
+      <div class="status"><span>9:41</span><span>✈︎</span></div>
+      <div class="hdr">
+        <div class="brand"><svg width="22" height="22" viewBox="0 0 34 34"><rect x="1" y="1" width="32" height="32" rx="8" fill="#131614"/><rect x="7" y="7" width="8" height="8" rx="1.5" stroke="#F3F4F0" stroke-width="2" fill="none"/><rect x="10" y="10" width="2" height="2" fill="#F3F4F0"/><rect x="19" y="7" width="8" height="8" rx="1.5" stroke="#F3F4F0" stroke-width="2" fill="none"/><rect x="22" y="10" width="2" height="2" fill="#F3F4F0"/><rect x="7" y="19" width="8" height="8" rx="1.5" stroke="#F3F4F0" stroke-width="2" fill="none"/><rect x="10" y="22" width="2" height="2" fill="#F3F4F0"/><path d="M19.5 26.5 27 19M21.5 19H27v5.5" stroke="#E39A00" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>QRelay</div>
+        <div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#131614" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></div>
+      </div>
+      <div style="height:14px"></div>
+      <div class="card primary" id="sendCard">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F3F4F0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><path d="M14 21l7-7M16 14h5v5"/></svg>
+        <div class="ct">Send a file</div>
+        <div class="cs">Show it as a stream of QR codes</div>
+        <div class="ripple" id="ripple"></div>
+      </div>
+      <div class="card">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#131614" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        <div class="ct">Receive a file</div>
+        <div class="cs">Point the camera at a sender's screen</div>
+      </div>
+      <div style="height:22px"></div>
+      <div class="eyebrow">Recent</div>
+      <div class="hrow"><div class="d" style="background:var(--lock)"></div><div><div class="n">trip-itinerary.pdf</div><div class="m">received · 212 KB · yesterday</div></div></div>
+      <div class="hrow"><div class="d" style="background:var(--key)"></div><div><div class="n">receipt-scan.jpg</div><div class="m">sent · 96 KB · Mon</div></div></div>
+    </div>
+
+    <div class="scr" id="sKey">
+      <div class="status"><span>9:41</span><span>✈︎</span></div>
+      <div class="hdr">
+        <div class="iconbtn" style="background:transparent; width:30px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#131614" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></div>
+        <div style="font:600 16px/1 B">Key</div>
+        <div class="tag" style="background:var(--keySoft); color:var(--keyInk)">shown once</div>
+      </div>
+      <div style="position:absolute; left:0; right:0; top:150px; text-align:center">
+        <div class="big">Scan this key</div>
+        <div style="position:relative; width:252px; height:252px; margin:22px auto 0">
+          <svg width="252" height="252" style="position:absolute; inset:0; transform:rotate(-90deg)">
+            <circle cx="126" cy="126" r="120" stroke="#DCE0D8" stroke-width="6" fill="none"/>
+            <circle id="ringArc" cx="126" cy="126" r="120" stroke="#E39A00" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="754"/>
+          </svg>
+          <div style="position:absolute; left:22px; top:22px; width:208px; height:208px; background:#fff; border-radius:10px; padding:8px"><canvas id="cKey" width="29" height="29" style="width:192px; height:192px; display:block; image-rendering:pixelated"></canvas></div>
+        </div>
+        <div id="keyLeft" class="mono" style="font:600 22px/1.4 M; margin-top:18px">3.0</div>
+        <div class="mono" style="font:400 12px/1.4 M; color:var(--keyInk); margin-top:4px">session K7QF · 32 bytes · AES-256-GCM</div>
+      </div>
+      <div class="actions">
+        <div class="btn primary">Start the stream now</div>
+        <div class="btn ghost">Hold the key</div>
+      </div>
+    </div>
+
+    <div class="scr" id="sStream">
+      <div class="status" style="color:#fff"><span>9:41</span><span>✈︎</span></div>
+      <div class="hdr">
+        <div class="iconbtn" style="background:transparent; width:30px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></div>
+        <div style="flex:1; padding-left:6px">
+          <div style="font:600 15px/1.3 B">boarding-pass.pdf</div>
+          <div style="display:flex; align-items:center; gap:6px; font:400 11.5px/1.4 M; color:#37CF87"><span id="blink" style="width:7px; height:7px; border-radius:4px; background:#37CF87"></span>streaming</div>
+        </div>
+        <div class="iconbtn" style="background:var(--control)"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1" fill="#fff"/><rect x="14" y="5" width="4" height="14" rx="1" fill="#fff"/></svg></div>
+      </div>
+      <div style="position:absolute; left:20px; right:20px; top:150px">
+        <div id="streamQR"><canvas id="cStream" width="53" height="53"></canvas></div>
+        <div class="tele" id="teleA"></div>
+      </div>
+      <div class="actions">
+        <div class="btn onBlackSec">Show the key again</div>
+        <div class="btn onBlack">Done</div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- receiver phone -->
+  <div class="phone" id="phB"><div class="screen"><div class="island"></div>
+    <div class="scr" id="sRecv">
+      <div class="status"><span>9:41</span><span>✈︎</span></div>
+      <div class="hdr">
+        <div class="iconbtn" style="background:transparent; width:30px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#131614" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></div>
+        <div style="font:600 16px/1 B">Receiving</div>
+        <div class="tag" style="background:var(--lockSoft); color:var(--lockInk)">key locked</div>
+      </div>
+      <div style="height:8px"></div>
+      <div class="vf">
+        <div class="vfShot"><div class="q"><canvas id="cCam" width="53" height="53"></canvas></div></div>
+        <div class="corner" style="left:40px; top:30px; border-left-width:4px; border-top-width:4px; border-top-left-radius:10px"></div>
+        <div class="corner" style="right:40px; top:30px; border-right-width:4px; border-top-width:4px; border-top-right-radius:10px"></div>
+        <div class="corner" style="left:40px; bottom:62px; border-left-width:4px; border-bottom-width:4px; border-bottom-left-radius:10px"></div>
+        <div class="corner" style="right:40px; bottom:62px; border-right-width:4px; border-bottom-width:4px; border-bottom-right-radius:10px"></div>
+        <div class="pill" id="pill"><span class="dt" id="pillDot"></span><span id="pillText">Receiving</span></div>
+      </div>
+      <div style="display:flex; align-items:center; margin-top:16px">
+        <div style="flex:1; font:600 14px/1.3 B">boarding-pass.pdf</div>
+        <div class="mono" style="font:400 12px/1.4 M; color:var(--muted)">43 KB · 40 blocks</div>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="stats" id="stats"></div>
+      <div class="actions"><div class="btn ghost">Cancel</div></div>
+    </div>
+
+    <div class="scr" id="sDone">
+      <div class="status"><span>9:41</span><span>✈︎</span></div>
+      <div class="hdr">
+        <div class="iconbtn" style="background:transparent; width:30px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#131614" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></div>
+        <div></div><div></div>
+      </div>
+      <div style="text-align:center; padding-top:18px">
+        <svg width="96" height="96" viewBox="0 0 96 96" id="check"><circle cx="48" cy="48" r="46" fill="#D8F3E3" stroke="#159A5C" stroke-width="2"/><path id="checkPath" d="M30 49l12 12 25-27" stroke="#0B6A3F" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-dasharray="60"/></svg>
+        <div id="doneBody">
+          <div class="big" style="margin-top:10px">Received</div>
+          <div class="sub" style="margin-top:6px">Decrypted and checked against<br/>the sender's SHA-256</div>
+          <div class="filecard" style="margin-top:20px; text-align:left">
+            <div class="fileicon">PDF</div>
+            <div><div style="font:600 14px/1.3 B">boarding-pass.pdf</div><div class="mono" style="font:400 11.5px/1.4 M; color:var(--muted)">43 KB · 40 blocks · 4.7 s</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="btn primary">Open</div>
+        <div class="pair"><div class="btn secondary">Save a copy</div><div class="btn secondary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#131614" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M5 12v8h14v-8"/></svg>Share</div></div>
+        <div class="pair"><div class="btn ghost">Receive another</div><div class="btn ghost">Home</div></div>
+      </div>
+    </div>
+  </div></div>
+
+  <div id="plane">
+    <div id="planeIcon"><svg width="64" height="64" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" fill="#8A5C00"/></svg></div>
+    <div id="planeLine">Works in airplane mode.</div>
+  </div>
+
+  <div id="lockup">
+    <div id="lockRow">
+      <svg width="170" height="170" viewBox="0 0 34 34"><rect x="1" y="1" width="32" height="32" rx="8" fill="#131614"/><rect x="7" y="7" width="8" height="8" rx="1.5" stroke="#F3F4F0" stroke-width="2" fill="none"/><rect x="10" y="10" width="2" height="2" fill="#F3F4F0"/><rect x="19" y="7" width="8" height="8" rx="1.5" stroke="#F3F4F0" stroke-width="2" fill="none"/><rect x="22" y="10" width="2" height="2" fill="#F3F4F0"/><rect x="7" y="19" width="8" height="8" rx="1.5" stroke="#F3F4F0" stroke-width="2" fill="none"/><rect x="10" y="22" width="2" height="2" fill="#F3F4F0"/><path d="M19.5 26.5 27 19M21.5 19H27v5.5" stroke="#E39A00" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      <div id="lockWord">QRelay</div>
+    </div>
+    <div id="lockSub">iOS · Android · no account</div>
+  </div>
+</div>
+
+<script src="qr.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const p = (t, a, b) => clamp((t - a) / (b - a));
+const out = (x) => 1 - Math.pow(1 - x, 3);
+const inOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const back = (x) => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+function set(el, o, tx = 0, ty = 0, sc = 1) {
+  el.style.opacity = o;
+  el.style.visibility = o <= 0.001 ? 'hidden' : 'visible';
+  el.style.transform = `translate(${tx}px, ${ty}px) scale(${sc})`;
+}
+
+const drawn = new Map();
+function drawQR(canvas, m, fg = '#000') {
+  if (drawn.get(canvas) === m) return;
+  drawn.set(canvas, m);
+  canvas.width = m.n; canvas.height = m.n;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, m.n, m.n);
+  ctx.fillStyle = fg;
+  for (let i = 0; i < m.bits.length; i++) if (m.bits[i] === '1') ctx.fillRect(i % m.n, Math.floor(i / m.n), 1, 1);
+}
+const F = QRDATA.frames;
+drawQR($('cKey'), QRDATA.key);
+
+// receiver block grid: 40 blocks, three missed in the in-order pass
+const N = 40, MISSED = [6, 17, 29], REPAIR_AT = { 41: 6, 43: 17, 46: 29 };
+const cells = [];
+for (let i = 0; i < N; i++) { const d = document.createElement('div'); d.className = 'cell'; const f = document.createElement('i'); d.appendChild(f); $('grid').appendChild(d); cells.push(d); }
+const tele = (label, id) => `<div><div class="tlabel">${label}</div><div class="tval" id="${id}"></div></div>`;
+$('teleA').innerHTML = tele('frame', 'tF') + tele('pass', 'tP') + tele('fps', 'tR') + tele('sent', 'tS') + tele('elapsed', 'tE') + tele('rate', 'tK');
+$('stats').innerHTML = ['decode:rD', 'frames:rF', 'dupes:rU', 'goodput:rG', 'left:rL', 'blocks:rB'].map((s) => { const [l, id] = s.split(':'); return `<div class="stat">${tele(l, id)}</div>`; }).join('');
+
+const T0 = 10.2; // stream start
+function streamState(t) {
+  const seed = Math.floor((t - T0) * 10);
+  const solvedAt = new Array(N).fill(Infinity);
+  for (let i = 0; i < N; i++) if (!MISSED.includes(i)) solvedAt[i] = T0 + i / 10 + 0.05;
+  for (const [s, b] of Object.entries(REPAIR_AT)) solvedAt[b] = T0 + Number(s) / 10 + 0.05;
+  let solved = 0;
+  for (let i = 0; i < N; i++) if (t >= solvedAt[i]) solved++;
+  return { seed, solvedAt, solved };
+}
+
+function render(t) {
+  // background
+  const paperIn = inOut(p(t, 3.3, 3.8));
+  $('paperbg').style.clipPath = `circle(${paperIn * 1150}px at 960px 540px)`;
+
+  // 1 · hook
+  const hookOut = p(t, 3.15, 3.4);
+  set($('hook'), 1 - hookOut, 0, 0, 1 - 0.03 * hookOut);
+  const qIn = out(p(t, 0, 0.35));
+  const bumps = [0.3, 0.8, 1.3].reduce((a, s) => a + Math.max(0, 1 - Math.abs(t - s - 0.1) * 8) * 0.025, 0);
+  set($('qrHook'), qIn, 0, 0, 0.9 + 0.1 * qIn + bumps);
+  drawQR($('cHook'), F[Math.max(0, Math.floor(t * 10)) % F.length]);
+  [['h1', 0.3], ['h2', 0.8], ['h3', 1.3]].forEach(([id, s]) => {
+    const k = out(p(t, s, s + 0.22));
+    set($(id), k, 0, 50 * (1 - k), 1.08 - 0.08 * k);
+  });
+
+  // 2 · reveal
+  const rvOut = out(p(t, 6.1, 6.35));
+  const mk = back(p(t, 3.55, 3.95));
+  set($('revealMark'), p(t, 3.55, 3.7) * (1 - rvOut), 0, -30 * rvOut, 0.6 + 0.4 * mk);
+  $('markArrow').style.strokeDashoffset = 20 * (1 - out(p(t, 3.8, 4.15)));
+  const wd = out(p(t, 3.75, 4.1));
+  set($('revealWord'), wd * (1 - rvOut), 0, 40 * (1 - wd) - 30 * rvOut);
+  const tg = out(p(t, 4.05, 4.4));
+  set($('revealTag'), tg * (1 - rvOut), 0, 30 * (1 - tg) - 30 * rvOut);
+
+  // captions
+  const capAnim = (id, a, z) => {
+    const el = $(id);
+    const k = out(p(t, a, a + 0.4)), o = out(p(t, z, z + 0.3));
+    set(el, k * (1 - o), -60 * o, 40 * (1 - k));
+    [...el.children].forEach((c, i) => { const ki = out(p(t, a + i * 0.08, a + i * 0.08 + 0.4)); c.style.opacity = ki; c.style.transform = `translateY(${24 * (1 - ki)}px)`; });
+  };
+  capAnim('cap1', 6.5, 9.75);
+  capAnim('cap2', 10.25, 14.95);
+  capAnim('cap3', 15.3, 18.0);
+
+  // phone A: sender. 1180 in scene 3, 740 in scene 4
+  const aIn = out(p(t, 6.3, 6.75));
+  const aMove = inOut(p(t, 9.8, 10.3));
+  const aOut = out(p(t, 14.95, 15.35));
+  set($('phA'), p(t, 6.3, 6.45) * (1 - p(t, 14.95, 15.15)), lerp(1200, 760, aMove) - 120 * aOut, 120 + 120 * (1 - aIn));
+  $('phA').style.left = '0px'; $('phA').style.top = '0px';
+  // home -> key -> stream
+  const press = Math.sin(Math.PI * p(t, 7.05, 7.35));
+  $('sendCard').style.transform = `scale(${1 - 0.03 * press})`;
+  const rp = p(t, 7.05, 7.45);
+  const rip = $('ripple');
+  rip.style.left = '150px'; rip.style.top = '40px';
+  rip.style.opacity = rp > 0 && rp < 1 ? 0.9 * (1 - rp) : 0;
+  rip.style.transform = `translate(-50%, -50%) scale(${1 + 14 * out(rp)})`;
+  const toKey = inOut(p(t, 7.45, 7.8));
+  set($('sHome'), toKey >= 1 ? 0 : 1 - toKey * 0.6, -120 * toKey);
+  const toStream = inOut(p(t, 9.95, 10.3));
+  set($('sKey'), toKey < 0.001 ? 0 : 1 - 0.6 * toStream, 380 * (1 - toKey) - 120 * toStream);
+  set($('sStream'), toStream < 0.001 ? 0 : 1, 380 * (1 - toStream));
+  const ring = p(t, 7.8, 10.8);
+  $('ringArc').style.strokeDashoffset = 754 * ring;
+  $('keyLeft').textContent = Math.max(0, 3 * (1 - ring)).toFixed(1);
+
+  // stream content
+  const st = streamState(t);
+  const seed = Math.max(0, st.seed);
+  const fr = F[seed % F.length];
+  drawQR($('cStream'), fr);
+  drawQR($('cCam'), fr);
+  const rep = seed >= N;
+  $('tF').textContent = t < T0 ? '–' : `${seed + 1}`;
+  $('tP').textContent = t < T0 ? '–' : rep ? 'repair' : 'in order';
+  $('tR').textContent = '10.0';
+  $('tS').textContent = t < T0 ? '–' : rep ? `repair ${seed - N + 1}` : `${seed + 1}/${N}`;
+  const el = Math.max(0, Math.min(t, 14.9) - T0);
+  $('tE').textContent = `${el.toFixed(1)} s`;
+  $('tK').textContent = '10.8 KB/s';
+  $('blink').style.opacity = 0.25 + 0.75 * Math.abs(Math.cos(Math.PI * t));
+
+  // phone B: receiver. 1240 in scene 4, 1200 in scene 5
+  const bIn = out(p(t, 10.0, 10.45));
+  const bMove = inOut(p(t, 14.95, 15.4));
+  const bOut = out(p(t, 18.0, 18.35));
+  set($('phB'), p(t, 10.0, 10.15) * (1 - p(t, 18.0, 18.15)), lerp(lerp(1500, 1260, bIn), 1200, bMove), 120 + 80 * bOut);
+  $('phB').style.left = '0px'; $('phB').style.top = '0px';
+  for (let i = 0; i < N; i++) {
+    const k = back(p(t, st.solvedAt[i], st.solvedAt[i] + 0.25));
+    const on = t >= st.solvedAt[i];
+    cells[i].style.background = on ? 'var(--lock)' : 'var(--paper4)';
+    cells[i].style.transform = `scale(${on ? 0.7 + 0.3 * k : 0.7})`;
+    const pending = MISSED.includes(i) && !on && seed >= N ? 0.6 : 0;
+    cells[i].firstChild.style.height = `${pending * 100}%`;
+  }
+  const verifying = seed >= 47;
+  $('pillText').textContent = verifying ? 'Verifying SHA-256' : 'Receiving';
+  $('pill').style.background = 'var(--lock)';
+  $('pill').style.color = '#03160C';
+  $('pillDot').style.background = '#03160C';
+  $('pillDot').style.opacity = 0.25 + 0.75 * Math.abs(Math.cos(Math.PI * t));
+  const scanned = t < T0 ? 0 : Math.min(seed + 1, 48) - MISSED.filter((m) => seed >= m).length;
+  const dupes = [40, 42, 44, 45].filter((s) => seed >= s).length;
+  $('rD').textContent = '10 fps';
+  $('rF').textContent = `${Math.max(0, scanned)}`;
+  $('rU').textContent = `${dupes}`;
+  $('rG').textContent = `${el > 0.3 ? ((st.solved * 1.08) / el).toFixed(1) : '–'} KB/s`;
+  $('rL').textContent = verifying ? 'done' : t < T0 + 0.5 ? '–' : `~${Math.max(1, Math.ceil((N - st.solved) / 10 + 0.4))} s`;
+  $('rB').textContent = `${st.solved}/${N}`;
+  // receiving -> done
+  const toDone = inOut(p(t, 15.0, 15.35));
+  set($('sRecv'), toDone >= 1 ? 0 : 1 - toDone * 0.6, -120 * toDone);
+  set($('sDone'), toDone < 0.001 ? 0 : 1, 380 * (1 - toDone));
+  $('checkPath').style.strokeDashoffset = 60 * (1 - out(p(t, 15.45, 15.9)));
+  const cb = back(p(t, 15.3, 15.6));
+  $('check').style.transform = `scale(${0.7 + 0.3 * cb})`;
+  const db = out(p(t, 15.55, 15.95));
+  $('doneBody').style.opacity = db;
+  $('doneBody').style.transform = `translateY(${16 * (1 - db)}px)`;
+
+  // 6 · outro
+  const pl = out(p(t, 18.35, 18.75)), plOut = out(p(t, 19.75, 19.95));
+  set($('plane'), pl * (1 - plOut), 0, 40 * (1 - pl) - 30 * plOut);
+  $('planeIcon').style.transform = `translateX(${-30 * (1 - pl)}px) rotate(${(1 - pl) * -20}deg)`;
+  const lk = back(p(t, 19.95, 20.4));
+  set($('lockup'), p(t, 19.95, 20.15), 0, 0, 0.85 + 0.15 * lk);
+  $('lockSub').style.opacity = out(p(t, 20.2, 20.5));
+}
+window.render = render;
+window.ready = document.fonts.ready.then(() => { render(0); return true; });
+</script>
+</body>
+</html>

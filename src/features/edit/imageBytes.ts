@@ -65,7 +65,11 @@ export function jpegInfo(b: Uint8Array): JpegInfo | null {
 }
 
 export function pngFromScanlines(scanlines: Uint8Array, width: number, height: number, channels: 1 | 3): Uint8Array {
-  const idat = zlibSync(scanlines, { level: 1 });
+  return pngFromIdat(zlibSync(scanlines, { level: 1 }), width, height, channels);
+}
+
+// For data that is already zlib-compressed PNG scanlines, such as a PDF Flate image with a PNG predictor.
+export function pngFromIdat(idat: Uint8Array, width: number, height: number, channels: 1 | 3): Uint8Array {
   const ihdr = new Uint8Array(13);
   writeU32(ihdr, 0, width);
   writeU32(ihdr, 4, height);
@@ -80,6 +84,39 @@ export function pngFromScanlines(scanlines: Uint8Array, width: number, height: n
     p += c.length;
   }
   return out;
+}
+
+export interface PngInfo {
+  width: number;
+  height: number;
+  depth: number;
+  colorType: number;
+  interlaced: boolean;
+  idat: Uint8Array;
+}
+
+export function readPng(b: Uint8Array): PngInfo | null {
+  if (b.length < 33 || b[0] !== 0x89 || b[1] !== 0x50) return null;
+  const u32 = (p: number) => ((b[p] << 24) | (b[p + 1] << 16) | (b[p + 2] << 8) | b[p + 3]) >>> 0;
+  const parts: Uint8Array[] = [];
+  let info: Omit<PngInfo, 'idat'> | null = null;
+  for (let p = 8; p + 8 <= b.length; ) {
+    const len = u32(p);
+    const type = String.fromCharCode(b[p + 4], b[p + 5], b[p + 6], b[p + 7]);
+    const data = b.subarray(p + 8, p + 8 + len);
+    if (type === 'IHDR') info = { width: u32(p + 8), height: u32(p + 12), depth: data[8], colorType: data[9], interlaced: data[12] !== 0 };
+    else if (type === 'IDAT') parts.push(data);
+    else if (type === 'IEND') break;
+    p += 12 + len;
+  }
+  if (!info || parts.length === 0) return null;
+  const idat = new Uint8Array(parts.reduce((n, c) => n + c.length, 0));
+  let o = 0;
+  for (const c of parts) {
+    idat.set(c, o);
+    o += c.length;
+  }
+  return { ...info, idat };
 }
 
 function chunk(type: string, data: Uint8Array): Uint8Array {
